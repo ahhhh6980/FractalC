@@ -2,7 +2,7 @@
 
 # FractalC  v0.2a-2
 ## Terminal Activated Mandelbrot & Julia Fractal Generator in C
-![logo](https://i.imgur.com/9MKpYtN.png)!
+![logo](https://i.imgur.com/9MKpYtN.png)
 ## Setup;
 
 ### ---Compile From Source---
