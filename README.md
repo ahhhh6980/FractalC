@@ -1,7 +1,8 @@
 
+
 # FractalC  v0.2a-1
 ## Terminal Activated Mandelbrot & Julia Fractal Generator in C
-![Mandelbrot Zoom](https://i.imgur.com/lg1nzW1.png)![enter image description here](https://imgur.com/RiDgMZx.png)
+![logo](https://i.imgur.com/9MKpYtN.png)!
 ## Setup;
 
 ### ---Compile From Source---
@@ -113,4 +114,27 @@
 **Example Of Maximum Input;**
 - **$** `./FractalC 0 name.png 0.0 0.0 0.7 2500 0.25 2 4 2.5 1 -0.7269 0.188`
 - **>** `start FractalC.exe 0 name.png 0.0 0.0 0.7 2500 0.25 2 4 2.5 1 -0.7269 0.188`
+## License
+```
+MIT License
 
+Copyright (c) 2020 ahhhh6980
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
