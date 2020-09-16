@@ -1,5 +1,5 @@
 
-# FractalC  Version 0.1a-0
+# FractalC  Version 0.1a-1
 ## Terminal Activated Mandelbrot Generator in C**
 ![Mandelbrot Zoom](https://i.imgur.com/lg1nzW1.png)
 ## Installation;
