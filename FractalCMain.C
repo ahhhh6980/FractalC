@@ -110,7 +110,8 @@ rgba_t rgba;
 i_out_t out;
 
 int mode;
-
+complex_t jCoord;
+int isJulia;
 inline complex_t c_div_n( complex_t a, int b){
 	return { a.real / b, a.imag / b };
 }
@@ -197,7 +198,10 @@ i_out_t compute( pixel_t pixel )
 
 	complex_t c = { map_to_range( pixel.x, range_t { 0, (double)(frame.w) }, xRange), map_to_range( pixel.y, range_t { 0, (double)(frame.h) }, yRange) };
 	complex_t z = c;
-	
+	if(isJulia==1){
+		c = jCoord;
+	}
+
 	double p = sqrt( (c.real - 0.25)*(c.real - 0.25) + c.imag*c.imag );
 
 	if( (mode==1) or (c.real > p - 2*p*p + 0.25) && ((c.real+1)*(c.real+1) + c.imag*c.imag  > 0.0625)  ){
@@ -226,14 +230,18 @@ void draw_image( char name[] )
 
 	start = time(NULL);
 	iterator = 0.0;
-	vbv = ( double)(frame.w * frame.h) / 2;
+	vbv = ( double )(frame.w * frame.h) / 2;
 	xRange = { ( -1 / zoom ) + position.real, ( 1 / zoom ) + position.real };
 	yRange = { ratio.b/ratio.a *( (-1 / zoom ) + position.imag ), ratio.b/ratio.a * (( 1 / zoom ) + position.imag )};
+	printf("%lf, %lf\n", xRange.a, xRange.b);
+	printf("%lf, %lf\n", yRange.a, yRange.b);
 	pixels = new uint8_t[frame.w * frame.h * 3];
 	rgba = {0,0,0,0};
 	out = {0,0};
+
 	double v = 0.0;
 	int index = 0;
+
 	for(int y = 0; y<frame.h; y++){
 		for(int x = 0; x < frame.w; x++){
 			for(double fy = 0.0; fy < logs; fy++ ){
@@ -263,7 +271,7 @@ void draw_image( char name[] )
 			iterator++;
 		}
 	}
-	printf("%lf\n",out.d);
+
 	printf("Finished in %ld seconds\n",time(NULL)-start);
 	stbi_write_png(name, frame.w, frame.h, 3, pixels, frame.w * 3);
 
@@ -276,14 +284,15 @@ int main(int argc, char *argv[])
 {	
 
 	char* name = "new.png";
-	if( argc >= 1 ){
+	if( argc >= 2 ){
+		printf("OH 1\n");
 		mode = atoi(argv[1]);
-		printf("%d\n",mode);
 	} else {
 		mode = 0;
 	}
 
-	if( argc >= 6 ){
+	if( argc >= 7 ){
+		printf("OH 2\n");
 		char* name = argv[2];
 		position = { strtod(argv[3], NULL), strtod(argv[4], NULL) };
 		zoom = strtod(argv[5], NULL);
@@ -294,23 +303,35 @@ int main(int argc, char *argv[])
 		limit = 2500;
 	}
 	
-	if( argc == 9 ){
-		resolution = strtod(argv[7], NULL);
-		ratio = { strtod(argv[8], NULL), strtod(argv[9], NULL) };
+	if( argc >= 11 ){
+		printf("OH 3\n");
+		exponent = strtod(argv[7], NULL);
+		resolution = strtod(argv[8], NULL);
+		ratio = { strtod(argv[9], NULL), strtod(argv[10], NULL) };
 	} else {
+		exponent = 0.25;
 		resolution = 2.0;
 		ratio = { 4.0, 3.5 };
 	}
-	
-	exponent = 0.25;
+
+	if( argc == 14 ){
+		printf("OH 4\n");
+		isJulia = atoi(argv[11]);
+		jCoord = { strtod(argv[12], NULL), strtod(argv[13], NULL) };
+	} else {
+		isJulia = 0;
+		jCoord = {-0.7269, 0.188};
+	}
+	printf("%d",argc);
 	fancyColors = 0;
 	zLimit = 100000;
 	logs = 10;
+	printf( "%lf\n", resolution );
 	frame = get_frame( ratio, resolution );
 
 	printf("Starting [%dpx, %dpx] (%lf:%lf)\n", frame.w, frame.h, ratio.a, ratio.b);
 	draw_image( name );
 
 	return 0;
-
 }
+//./FractalC 0 new.png 0 0 1 2500 25 3..5 4.0
