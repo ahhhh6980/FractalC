@@ -13,9 +13,9 @@
 - Requires MinGW
 
 ### ---Running the binaries---
-***Linux***: **$** `./FractalC_linux64 [ARGUMENTS]`
+***Linux***: **$** `./FractalCv0.2a-2 [ARGUMENTS]`
 
-***Windows***: **>** `start FractalC_winx64-x86.exe [ARGUMENTS]`
+***Windows***: **>** `start FractalCv0.2a-2.exe [ARGUMENTS]`
 ## Arguments you can pass;
 ### ---You can pass 1 argument---
 1. **MODE**;
