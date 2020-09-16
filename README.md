@@ -1,5 +1,5 @@
 # FractalC  Version 0.2a-1
-## Terminal Activated Mandelbrot & Julia Fractal Generator in C**
+## Terminal Activated Mandelbrot & Julia Fractal Generator in C
 ![Mandelbrot Zoom](https://i.imgur.com/lg1nzW1.png)![enter image description here](https://imgur.com/RiDgMZx.png)
 ## Setup;
 
