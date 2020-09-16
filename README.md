@@ -22,8 +22,8 @@
 `Mode of 1 = Burning Ship`
 
 **Example;**
-**$** ` ./FractalC 0`
-**>** `start FractalC.exe 0`
+- **$** ` ./FractalC 0`
+- **>** `start FractalC.exe 0`
 ### ---You can pass 6 arguments---
 1. **MODE**
 	`Mode of 0 = Mandelbrot`
@@ -42,8 +42,8 @@
 	`The iteration limit`
 
 **Example;**
-**$** `./FractalC 0 new.png 0.0 0.0 0.7 2500`
-**>** `start FractalC.exe 0 new.png 0.0 0.0 0.7 2500`
+- **$** `./FractalC 0 new.png 0.0 0.0 0.7 2500`
+- **>** `start FractalC.exe 0 new.png 0.0 0.0 0.7 2500`
 ### ---You can pass 10 arguments---
 1. **MODE**
 	`Mode of 0 = Mandelbrot`
@@ -74,8 +74,8 @@
 	
 	
 **Example;**
-**$** `./FractalC 0 new.png -0.75 0 0.7 2500 0.25 2.0 4.0 3.5`
-**>** `start FractalC.exe 0 new.png -0.75 0 0.7 2500 0.25 2.0 4.0 3.5`
+- **$** `./FractalC 0 new.png -0.75 0 0.7 2500 0.25 2.0 4.0 3.5`
+- **>** `start FractalC.exe 0 new.png -0.75 0 0.7 2500 0.25 2.0 4.0 3.5`
 ### ---You can pass 13 arguments---
 1. **MODE**
 	`Mode of 0 = Mandelbrot`
@@ -111,6 +111,6 @@
 	`Julia Coord Y`
 	
 **Example Of Maximum Input;**
-**$** `./FractalC 0 name.png 0.0 0.0 0.7 2500 0.25 2 4 2.5 1 -0.7269 0.188`
-**>** `start FractalC.exe 0 name.png 0.0 0.0 0.7 2500 0.25 2 4 2.5 1 -0.7269 0.188`
+- **$** `./FractalC 0 name.png 0.0 0.0 0.7 2500 0.25 2 4 2.5 1 -0.7269 0.188`
+- **>** `start FractalC.exe 0 name.png 0.0 0.0 0.7 2500 0.25 2 4 2.5 1 -0.7269 0.188`
 
