@@ -1,56 +1,71 @@
-# FractalC
-Version 0.1a-0
-Terminal Activated Mandelbrot Generator in C
 
-To Compile On Linux;
-$ gcc -o FractalC FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++
+# FractalC  Version 0.1a-0
+## Terminal Activated Mandelbrot Generator in C**
+![Mandelbrot Zoom](https://i.imgur.com/lg1nzW1.png)
+## Installation;
+### Linux;
+**To Compile**: `$ gcc -o FractalC FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
 
-To Run On Linux;
-$ ./FractalC [ARGUMENTS]
+**To Run**: `$ ./FractalC [ARGUMENTS]`
+## Arguments you can pass;
 
-Arguments you can pass;
+### You can pass 1 argument
+1. **MODE**;
+`Mode of 0 = Mandelbrot`
+`Mode of 1 = Burning Ship`
 
-You can pass 1 argument
-1:: The MODE;
-	Mode of 0 = Mandelbrot
-	Mode of 1 = Burning Ship
-	Example; 0
+***Example;***
+```
+$ ./FractalC 0
+```
 	
-You can pass 6 arguments
-1:: the MODE
-
-2:: the NAME;
-	Name ending in .png or .jpg.
-	Example; new.png
+### You can pass 6 arguments
+1. **MODE**
+	`Mode of 0 = Mandelbrot`
+	`Mode of 1 = Burning Ship`
+3. **NAME**
+	`Name ending in .png or .jpg`
 	
-3 & 4:: the POSITION;
-	3; Position X
-	4; Position Y
-	Example; 0.0 0.0
+4. **POSITION X**
+	 `Complex Coordinate X`
+5.  **POSITION Y**
+	`Complex Coordinate Y`
+6. **ZOOM**
+	`Multiplier of magnification`
+
+7. **LIMIT**
+	`The iteration limit`
+
+***Example;***
+```
+$ ./FractalC 0 new.png 0.0 0.0 0.7 2500
+```
+### You can pass 9 arguments
+1. **MODE**
+	`Mode of 0 = Mandelbrot`
+	`Mode of 1 = Burning Ship`
+2. **NAME**
+	`Name ending in .png or .jpg`
 	
-5:: the ZOOM;
-	Multiplier of magnification
-	Example; 0.7
+3. **POSITION X**
+	 `Complex Coordinate X`
+4.  **POSITION Y**
+	`Complex Coordinate Y`
+5. **ZOOM**
+	`Multiplier of magnification`
 
-6:: the LIMIT;
-	The iteration limit
-	Example; 2500
+6. **LIMIT**
+	`The iteration limit`
+
+
+7. **RESOLUTION**
+	`Multiplier of resolution`
+	`Image size = 60 * resolution * ratio`
+
+8. **RATIO X**
+	`Ratio of image for X`
+10. **RATIO Y**
+	`Ratio of image for Y`
 	
-You can pass 9 arguments
-1:: the MODE
-2:: the NAME;
-3 & 4:: the POSITION;
-5:: the ZOOM;
-6:: the LIMIT;
-
-7:: the RESOLUTION;
-	Multiplier of resolution
-	Image size = 60 * resolution * ratio
-	Example; 2.0
-
-8 & 9:: the RATIO;
-	Image ratio
-	Example; 4.0 3.5
-
 EXAMPLE OF FULL INPUT;
-$ ./FractalC 0 new.png -0.75 0 0.7 2500 2.0 4.0 3.5
+: `$ ./FractalC 0 new.png -0.75 0 0.7 2500 2.0 4.0 3.5`
