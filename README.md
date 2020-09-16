@@ -4,9 +4,9 @@
 ![Mandelbrot Zoom](https://i.imgur.com/lg1nzW1.png)
 ## Installation;
 ### Linux;
-**To Compile**: `$ gcc -o FractalC FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
+***To Compile***: **$** `gcc -o FractalC FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
 
-**To Run**: `$ ./FractalC [ARGUMENTS]`
+***To Run***: **$** `./FractalC [ARGUMENTS]`
 ## Arguments you can pass;
 
 ### You can pass 1 argument
@@ -15,9 +15,7 @@
 `Mode of 1 = Burning Ship`
 
 ***Example;***
-```
-$ ./FractalC 0
-```
+**$** ` ./FractalC 0`
 	
 ### You can pass 6 arguments
 1. **MODE**
@@ -37,9 +35,8 @@ $ ./FractalC 0
 	`The iteration limit`
 
 ***Example;***
-```
-$ ./FractalC 0 new.png 0.0 0.0 0.7 2500
-```
+**$** `./FractalC 0 new.png 0.0 0.0 0.7 2500`
+
 ### You can pass 9 arguments
 1. **MODE**
 	`Mode of 0 = Mandelbrot`
@@ -67,5 +64,7 @@ $ ./FractalC 0 new.png 0.0 0.0 0.7 2500
 10. **RATIO Y**
 	`Ratio of image for Y`
 	
-EXAMPLE OF FULL INPUT;
-: `$ ./FractalC 0 new.png -0.75 0 0.7 2500 2.0 4.0 3.5`
+	
+***Example;***
+**$** `./FractalC 0 new.png -0.75 0 0.7 2500 2.0 4.0 3.5`
+
