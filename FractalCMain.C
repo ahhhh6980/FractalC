@@ -71,9 +71,9 @@ rgba_t hsv_to_rgb( int h, double s, double v )
 {
 	rgba_t pureColor = { convert_hue( h ), convert_hue( h - 120 ), convert_hue( h + 120 ), 255 };
 	int m = MAX(MAX(pureColor.r,pureColor.g),pureColor.b);
-    pureColor.r = (int)( (m - ((m - pureColor.r ) * s )) * v );
-    pureColor.g = (int)( (m - ((m - pureColor.g ) * s )) * v );
-    pureColor.b = (int)( (m - ((m - pureColor.b ) * s )) * v );
+    	pureColor.r = (int)( (m - ((m - pureColor.r ) * s )) * v );
+    	pureColor.g = (int)( (m - ((m - pureColor.g ) * s )) * v );
+    	pureColor.b = (int)( (m - ((m - pureColor.b ) * s )) * v );
 	return pureColor;
 }
 
@@ -186,10 +186,6 @@ inline pixel_t rgba_to_pixel( rgba_t rgba ){
 	return { ((uint16_t) (pos % frame.w)), ((uint16_t) (pos / frame.h)) };
 }
 
-inline complex_t mandelbrotCompute( complex_t z, complex_t c){
-	return c_add( c_mult( z, z ), c );
-}
-
 // Compute pixel
 i_out_t compute( pixel_t pixel )
 {
@@ -209,9 +205,9 @@ i_out_t compute( pixel_t pixel )
 			//z = {abs(z.real), abs(z.imag)};
 			if(mode==1){
 				z = { abs(z.real), abs(z.imag) };
-				z = mandelbrotCompute( z, c );
+				z = c_add( c_mult( z, z ), c );
 			} else {
-				z = mandelbrotCompute( z, c );
+				z = c_add( c_mult( z, z ), c );
 			}
 
 			if( z.real*z.real > zLimit || z.imag*z.imag > zLimit ){
