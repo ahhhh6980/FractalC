@@ -272,9 +272,9 @@ void draw_image( char name[] )
 		}
 	}
 
-	printf("Finished in %ld seconds\n",time(NULL)-start);
+	
 	stbi_write_png(name, frame.w, frame.h, 3, pixels, frame.w * 3);
-
+	printf("Finished in %ld seconds\n",time(NULL)-start);
 	//unsigned char* rgb = stbi_load( "myimage.png", &width, &height, &bpp, 3 );
 	//printf("%d\n", output.i);
 
@@ -285,14 +285,12 @@ int main(int argc, char *argv[])
 
 	char* name = "new.png";
 	if( argc >= 2 ){
-		printf("OH 1\n");
 		mode = atoi(argv[1]);
 	} else {
 		mode = 0;
 	}
 
 	if( argc >= 7 ){
-		printf("OH 2\n");
 		char* name = argv[2];
 		position = { strtod(argv[3], NULL), strtod(argv[4], NULL) };
 		zoom = strtod(argv[5], NULL);
@@ -304,7 +302,6 @@ int main(int argc, char *argv[])
 	}
 	
 	if( argc >= 11 ){
-		printf("OH 3\n");
 		exponent = strtod(argv[7], NULL);
 		resolution = strtod(argv[8], NULL);
 		ratio = { strtod(argv[9], NULL), strtod(argv[10], NULL) };
@@ -315,7 +312,6 @@ int main(int argc, char *argv[])
 	}
 
 	if( argc == 14 ){
-		printf("OH 4\n");
 		isJulia = atoi(argv[11]);
 		jCoord = { strtod(argv[12], NULL), strtod(argv[13], NULL) };
 	} else {
@@ -334,4 +330,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-//./FractalC 0 new.png 0 0 1 2500 25 3..5 4.0
