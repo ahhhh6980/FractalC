@@ -1,4 +1,5 @@
 
+
 # FractalC  Version 0.1a-1
 ## Terminal Activated Mandelbrot Generator in C**
 ![Mandelbrot Zoom](https://i.imgur.com/lg1nzW1.png)
@@ -7,8 +8,8 @@
 ***To Compile***: **$** `gcc -o FractalC FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
 
 ***To Run***: **$** `./FractalC [ARGUMENTS]`
-## Arguments you can pass;
 
+## Arguments you can pass;
 ### You can pass 1 argument
 1. **MODE**;
 `Mode of 0 = Mandelbrot`
@@ -56,7 +57,7 @@
 
 
 7. **RESOLUTION**
-	`Multiplier of resolution`
+	`Multiplier of resolution ( Must be less than 101)`
 	`Image size = 60 * resolution * ratio`
 
 8. **RATIO X**
