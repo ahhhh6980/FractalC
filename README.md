@@ -9,13 +9,13 @@
 ***Linux***: **$** `gcc -o FractalC_linux64 FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
 - Requires GCC (any C compiler will do though), but it should already be installed
 
-***Windows x86-x64***: **>** `x86_64-w64-mingw32 -o FractalC_Win_x86-x64.exe FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
+***Windows x86-x64***: **>** `x86_64-w64-mingw32 -o  FractalC_winx64-x86.exe FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
 - Requires MinGW
 
 ### ---Running the binaries---
 ***Linux***: **$** `./FractalC_linux64 [ARGUMENTS]`
 
-***Windows***: **>** `start FractalC_Win_x86-x64.exe [ARGUMENTS]`
+***Windows***: **>** `start FractalC_winx64-x86.exe [ARGUMENTS]`
 ## Arguments you can pass;
 ### ---You can pass 1 argument---
 1. **MODE**;
