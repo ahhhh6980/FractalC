@@ -109,6 +109,7 @@ double iterator;
 double vbv;
 
 time_t start;
+time_t totalT;
 uint8_t* pixels;
 rgba_t rgba;
 i_out_t out;
@@ -117,8 +118,9 @@ int mode;
 complex_t jCoord;
 int isJulia;
 
-int cOffset;
+double cOffset;
 double cMult;
+char* n;
 
 inline complex_t c_div_n( complex_t a, int b){
 	return { a.real / b, a.imag / b };
@@ -241,8 +243,8 @@ void draw_image( char name[] )
 	vbv = ( double )(frame.w * frame.h) / 2;
 	xRange = { ( -1 / zoom ) + position.real, ( 1 / zoom ) + position.real };
 	yRange = {  ( (-(ratio.b/ratio.a) / zoom ) + position.imag ), (( (ratio.b/ratio.a) / zoom ) + position.imag )};
-	printf("%lf, %lf\n", xRange.a, xRange.b);
-	printf("%lf, %lf\n", yRange.a, yRange.b);
+	printf("X RANGE: {%lf, %lf}\n", xRange.a, xRange.b);
+	printf("Y RANGE: {%lf, %lf}\n", yRange.a, yRange.b);
 	pixels = new uint8_t[frame.w * frame.h * 3];
 	rgba = {0,0,0,0};
 	out = {0,0};
@@ -255,7 +257,7 @@ void draw_image( char name[] )
 		for(int x = 0; x < frame.w; x++){
 			for(double fy = 0.0; fy < logs; fy++ ){
 				if( iterator / vbv == fy/logs ){
-					printf("#%d: %d%%, @%lds\n", (int)( fy + 1 ), (int)((iterator / vbv ) * 100), time(NULL)-start );
+					printf("log %d: %d%%, @%lds\n", (int)( fy + 1 ), (int)((iterator / vbv ) * 100), time(NULL)-start );
 				}
 			}
 			out = compute( pixel_t { x, y } );
@@ -281,74 +283,118 @@ void draw_image( char name[] )
 		}
 	}
 
-	
+	printf("please wait while it's saving...\n");
 	stbi_write_png(name, frame.w, frame.h, 3, pixels, frame.w * 3);
-	printf("Finished in %ld seconds\n",time(NULL)-start);
-	//unsigned char* rgb = stbi_load( "myimage.png", &width, &height, &bpp, 3 );
-	//printf("%d\n", output.i);
 
+	totalT = time(NULL)-start;
+
+	if(totalT!=1){
+		printf("Finished and saved in %ld seconds\n",totalT);
+	} else {
+		printf("Finished and saved in %ld second\n",totalT);
+	}
+
+}
+
+const static struct{
+	const char* key;
+	int v;
+} check_key [] = {
+	{"-mode", 1},
+	{"-pos", 2},
+	{"-zoom", 3},
+	{"-lim", 4},
+	{"-cExp", 5},
+	{"-res", 6},
+	{"-ratio", 7},
+	{"-isJulia", 8},
+	{"-jPos", 9},
+	{"-fancy", 10},
+	{"-zMax", 11},
+	{"-log", 12},
+	{"-cOffset", 13},
+	{"-cScale", 14},
+	{"-name", 15}
+};
+
+int get_key( const char *key ){
+	for( int i = 0; i < 14; ++i ){
+		if( !strcmp(key, check_key[i].key) )
+			return check_key[i].v;    
+	}
+	return 0;
 }
 
 int main(int argc, char *argv[])
 {	
 
-	char* n = "LLL";
-	if( argc >= 2 ){
-		mode = atoi(argv[1]);
-	} else {
-		mode = 0;
-	}
-
-	if( argc >= 7 ){
-		n = argv[2];
-		printf("%s", n);
-		position = { strtod(argv[3], NULL), strtod(argv[4], NULL) };
-		zoom = strtod(argv[5], NULL);
-		limit = atoi(argv[6]);
-	} else {
-		position = { -0.75, 0 };
-		zoom = 0.7;
-		limit = 2500;
+	n = "generatedFractal.png";
+	mode = 0;
+	position = { -0.75, 0 };
+	zoom = 0.7;
+	limit = 2500;
+	exponent = 0.25;
+	resolution = 2.0;
+	ratio = { 4.0, 3.5 };
+	isJulia = 0;
+	jCoord = {-0.7269, 0.188};
+	fancyColors = 0;
+	zLimit = 1e10;
+	logs = 10;
+	cOffset = 0;
+	cMult = 1;
+	for(int i = 0; i < argc; ++i){
+		switch( get_key( argv[i] ) ) {
+			case 1:
+				mode = atoi(argv[i+1]);
+				break;
+			case 2:
+				position = { strtod(argv[i+1], NULL), strtod(argv[i+2], NULL) };
+				break;
+			case 3:
+				zoom = strtod(argv[i+1], NULL);
+				break;
+			case 4:
+				limit = atoi(argv[i+1]);
+				break;
+			case 5:
+				exponent = strtod(argv[i+1], NULL);
+				break;
+			case 6:
+				resolution = strtod(argv[i+1], NULL);
+				break;
+			case 7:
+				ratio = {strtod(argv[i+1], NULL), strtod(argv[i+2], NULL)};
+				break;
+			case 8:
+				isJulia = 1;
+				break;
+			case 9:
+				jCoord = {strtod(argv[i+1], NULL), strtod(argv[i+2], NULL)};
+				break;
+			case 10:
+				fancyColors = 1;
+				break;
+			case 11:
+				zLimit = strtod(argv[i+1], NULL);
+				break;
+			case 12:
+				logs = atoi(argv[i+1]);
+				break;
+			case 13:
+				cOffset = 45 * strtod(argv[i+1], NULL);
+				break;
+			case 14:
+				cMult = strtod(argv[i+1], NULL);
+				break;
+			case 15:
+				n = argv[i+1];
+				break;
+		}
 	}
 	
-	if( argc >= 11 ){
-		exponent = strtod(argv[7], NULL);
-		resolution = strtod(argv[8], NULL);
-		ratio = { strtod(argv[9], NULL), strtod(argv[10], NULL) };
-	} else {
-		exponent = 0.25;
-		resolution = 2.0;
-		ratio = { 4.0, 3.5 };
-	}
-
-	if( argc >= 14 ){
-		isJulia = atoi(argv[11]);
-		jCoord = { strtod(argv[12], NULL), strtod(argv[13], NULL) };
-	} else {
-		isJulia = 0;
-		jCoord = {-0.7269, 0.188};
-	}
-
-	if( argc == 19 ){
-		fancyColors = atoi(argv[14]);
-		zLimit = atof(argv[15]);
-		logs = atoi(argv[16]);
-		cOffset = 45 * atoi(argv[17]);
-		cMult = strtod(argv[18], NULL);
-	} else {
-		fancyColors = 1;
-		zLimit = 1e10;
-		logs = 10;
-		cOffset = 0;
-		cMult = 2;
-	}
-
-	printf("%d",argc);
-	
-	printf( "%lf\n", resolution );
 	frame = get_frame( ratio, resolution );
-
-	printf("Starting [%dpx, %dpx] (%lf:%lf)\n", frame.w, frame.h, ratio.a, ratio.b);
+	printf("Starting [%dpx, %dpx] (%.5g:%.5g)\n", frame.w, frame.h, ratio.a, ratio.b);
 	draw_image( n );
 
 	return 0;
