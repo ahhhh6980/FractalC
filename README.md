@@ -67,10 +67,10 @@
 	`Multiplies frequency of color`
 	
 **Example Of An Input;**
-- **$** `./FractalC -res 10 -ratio 4 3 -fancy -isJulia -jPos -0.7269 0.188 `
-- **>** `start FractalC -res 10 -ratio 4 3 -fancy -isJulia -jPos -0.7269 0.188 `
+- **$** `./FractalC -cExp 1 -cOffset 1 -pos 0 0 -res 10 -ratio 4 3 -fancy -isJulia -jPos -0.8 0.16 -cScale 0.55 `
+- **>** `start FractalC -cExp 1 -cOffset 1 -pos 0 0 -res 10 -ratio 4 3 -fancy -isJulia -jPos -0.8 0.16 -cScale 0.55 `
 
-![Input example](https://i.imgur.com/soJSdzD.png)
+![Input example](https://i.imgur.com/lZEAXW2.png)
 # License
 ```
 MIT License
