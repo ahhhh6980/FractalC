@@ -1,6 +1,6 @@
 
 
-# FractalC  v0.2a-2
+# FractalC  v0.2a-3
 ## Terminal Activated Mandelbrot & Julia Fractal Generator in C
 ![logo](https://i.imgur.com/9MKpYtN.png)
 ## Setup;
@@ -111,9 +111,56 @@
 13. **JuliaY**
 	`Julia Coord Y`
 	
-**Example Of Maximum Input;**
+**Example;**
 - **$** `./FractalC 0 name.png 0.0 0.0 0.7 2500 0.25 2 4 2.5 1 -0.7269 0.188`
 - **>** `start FractalC.exe 0 name.png 0.0 0.0 0.7 2500 0.25 2 4 2.5 1 -0.7269 0.188`
+### ---You can pass 18 arguments---
+1. **MODE**
+	`Mode of 0 = Mandelbrot`
+	`Mode of 1 = Burning Ship`
+2. **NAME**
+	`Name ending in .png or .jpg`
+	
+3. **POSITION X**
+	 `Complex Coordinate X`
+4.  **POSITION Y**
+	`Complex Coordinate Y`
+5. **ZOOM**
+	`Multiplier of magnification`
+
+6. **LIMIT**
+	`The iteration limit`
+
+7. **COLOR EXPONENT**
+	`The scale of colors`
+8. **RESOLUTION**
+	`Multiplier of resolution ( Must be less than 101)`
+	`Image size = 60 * resolution * ratio`
+
+9. **RATIO X**
+	`Ratio of image for X`
+10. **RATIO Y**
+	`Ratio of image for Y`
+11. **isJulia**
+	`0 = Dont Render Julia (Default)` `1 = Render Julia`
+12. **JuliaX**
+	`Julia Coord X`
+13. **JuliaY**
+	`Julia Coord Y`
+14. **FANCY COLORS**
+	`Enable for very trippy colors (slower rendering)`
+15. **Z MAGNITUDE LIMIT**
+	`if Z.real or z.imag exceeds this value, it will stop the iteration for that pixel`
+16. **LOG COUNT**
+	`Specifies number of console logs`
+17. **COLOR OFFSET**
+	`Multiple of 45 to offset the color`
+18. **COLOR MULTIPLIER**
+	`Multiplies frequency of color`
+	
+**Example Of Maximum Input;**
+- **$** `./FractalC 0 1.png 0 0 8 10000 1 0.25 16 9 1 -0.041747 0.699 0 1e2 20 3 10`
+- **>** `start FractalC.exe 0 1.png 0 0 8 10000 1 0.25 16 9 1 -0.041747 0.699 0 1e2 20 3 10`
 ## License
 ```
 MIT License

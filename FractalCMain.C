@@ -13,6 +13,8 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+#define E exp(1)
+
 typedef struct {
 	double real;
 	double imag;
@@ -58,22 +60,24 @@ inline double map_to_range( double i, range_t r1, range_t r2 ){
 	return ( ( ( i - r1.a ) / (r1.b - r1.a) ) * (r2.b - r2.a) ) + r2.a ;
 }
 
-uint8_t convert_hue( int theta )
+#define C_RANGE1 range_t {0, 60}
+#define C_RANGE2 range_t {0, 255}
+inline uint8_t convert_hue( int theta )
 {
 	theta %= 360;
 	if( theta >= 300 or theta <= 60 ){ return 255; }
-	if( theta < 300 and theta > 240 ){ return ((int)( map_to_range( theta % 60, range_t {0, 60}, range_t {0, 255} ) )); }
-	if( theta > 60  and theta < 120 ){ return ((int)( 255 - map_to_range( theta % 60, range_t {0, 60}, range_t {0, 255} ) )); }
+	if( theta < 300 and theta > 240 ){ return ((int)( map_to_range( theta % 60, C_RANGE1, C_RANGE2 ) )); }
+	if( theta > 60  and theta < 120 ){ return ((int)( 255 - map_to_range( theta % 60, C_RANGE1, C_RANGE2 ) )); }
 	return 0;
 }
 
-rgba_t hsv_to_rgb( int h, double s, double v )
+inline rgba_t hsv_to_rgb( int h, double s, double v )
 {
 	rgba_t pureColor = { convert_hue( h ), convert_hue( h - 120 ), convert_hue( h + 120 ), 255 };
-	int m = MAX(MAX(pureColor.r,pureColor.g),pureColor.b);
-    	pureColor.r = (int)( (m - ((m - pureColor.r ) * s )) * v );
-    	pureColor.g = (int)( (m - ((m - pureColor.g ) * s )) * v );
-    	pureColor.b = (int)( (m - ((m - pureColor.b ) * s )) * v );
+	int m = MAX( MAX(pureColor.r,pureColor.g), pureColor.b );
+    pureColor.r = (int)( (m - ((m - pureColor.r ) * s )) * v );
+    pureColor.g = (int)( (m - ((m - pureColor.g ) * s )) * v );
+    pureColor.b = (int)( (m - ((m - pureColor.b ) * s )) * v );
 	return pureColor;
 }
 
@@ -112,6 +116,10 @@ i_out_t out;
 int mode;
 complex_t jCoord;
 int isJulia;
+
+int cOffset;
+double cMult;
+
 inline complex_t c_div_n( complex_t a, int b){
 	return { a.real / b, a.imag / b };
 }
@@ -143,7 +151,7 @@ inline complex_t c_pow_c( complex_t a, complex_t b )
 	if ( b.real == 0.0 && b.imag == 0.0 )
 		return { 1, 0 }; 
 	complex_t pa = n_pow_c( a.real*a.real + a.imag*a.imag, c_div_n( b, 2 ) );
-	complex_t pb = n_pow_c( exp(1), c_mult(  c_mult( complex_t {0,1}, b)  , complex_t { atan( b.imag / a.real ), 0 } ) );
+	complex_t pb = n_pow_c( E, c_mult(  c_mult( complex_t {0,1}, b)  , complex_t { atan( b.imag / a.real ), 0 } ) );
 	return  c_mult( pa, pb );
 }
 
@@ -232,7 +240,7 @@ void draw_image( char name[] )
 	iterator = 0.0;
 	vbv = ( double )(frame.w * frame.h) / 2;
 	xRange = { ( -1 / zoom ) + position.real, ( 1 / zoom ) + position.real };
-	yRange = { ratio.b/ratio.a *( (-1 / zoom ) + position.imag ), ratio.b/ratio.a * (( 1 / zoom ) + position.imag )};
+	yRange = {  ( (-(ratio.b/ratio.a) / zoom ) + position.imag ), (( (ratio.b/ratio.a) / zoom ) + position.imag )};
 	printf("%lf, %lf\n", xRange.a, xRange.b);
 	printf("%lf, %lf\n", yRange.a, yRange.b);
 	pixels = new uint8_t[frame.w * frame.h * 3];
@@ -241,7 +249,8 @@ void draw_image( char name[] )
 
 	double v = 0.0;
 	int index = 0;
-
+	range_t range1 = {0.0, (double)(limit)};
+	range_t range2 = {0.0, 360};
 	for(int y = 0; y<frame.h; y++){
 		for(int x = 0; x < frame.w; x++){
 			for(double fy = 0.0; fy < logs; fy++ ){
@@ -256,12 +265,12 @@ void draw_image( char name[] )
    				pixels[index++] = 0;
 			} else {
 				if(fancyColors){
-					v = scale_to_range( out.i, range_t {0.0, (double)(limit)}, range_t {0.0, 360}, exponent*out.d);
+					v = scale_to_range( out.i, range1, range2, exponent*out.d);
 				} else {
-					v = scale_to_range( out.i, range_t {0.0, (double)(limit)}, range_t {0.0, 360}, exponent);
+					v = scale_to_range( out.i, range1, range2, exponent);
 				}
 
-				rgba = hsv_to_rgb( v, 1, 1 );
+				rgba = hsv_to_rgb( (v * cMult) + cOffset , 1, 1 );
 			
 				pixels[index++] = 255 - rgba.r ;
    				pixels[index++] = 255 - rgba.g ;
@@ -283,7 +292,7 @@ void draw_image( char name[] )
 int main(int argc, char *argv[])
 {	
 
-	char* name = "new.png";
+	char* n = "LLL";
 	if( argc >= 2 ){
 		mode = atoi(argv[1]);
 	} else {
@@ -291,7 +300,8 @@ int main(int argc, char *argv[])
 	}
 
 	if( argc >= 7 ){
-		char* name = argv[2];
+		n = argv[2];
+		printf("%s", n);
 		position = { strtod(argv[3], NULL), strtod(argv[4], NULL) };
 		zoom = strtod(argv[5], NULL);
 		limit = atoi(argv[6]);
@@ -311,22 +321,36 @@ int main(int argc, char *argv[])
 		ratio = { 4.0, 3.5 };
 	}
 
-	if( argc == 14 ){
+	if( argc >= 14 ){
 		isJulia = atoi(argv[11]);
 		jCoord = { strtod(argv[12], NULL), strtod(argv[13], NULL) };
 	} else {
 		isJulia = 0;
 		jCoord = {-0.7269, 0.188};
 	}
+
+	if( argc == 19 ){
+		fancyColors = atoi(argv[14]);
+		zLimit = atof(argv[15]);
+		logs = atoi(argv[16]);
+		cOffset = 45 * atoi(argv[17]);
+		cMult = strtod(argv[18], NULL);
+	} else {
+		fancyColors = 1;
+		zLimit = 1e10;
+		logs = 10;
+		cOffset = 0;
+		cMult = 2;
+	}
+
 	printf("%d",argc);
-	fancyColors = 0;
-	zLimit = 100000;
-	logs = 10;
+	
 	printf( "%lf\n", resolution );
 	frame = get_frame( ratio, resolution );
 
 	printf("Starting [%dpx, %dpx] (%lf:%lf)\n", frame.w, frame.h, ratio.a, ratio.b);
-	draw_image( name );
+	draw_image( n );
 
 	return 0;
 }
+//./FractalC 0 1.png 0 0 8 10000 1 0.25 16 9 1 -0.041747 0.699 0 1e2 20 3 10
