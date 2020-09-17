@@ -10,13 +10,13 @@
 ***Linux***: **$** `gcc -o FractalC_linux64 FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
 - Requires GCC (any C compiler will do though), but it should already be installed
 
-***Windows x86-x64***: **>** `x86_64-w64-mingw32 -o  FractalC_winx64-x86.exe FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
+***Windows x86-x64***: **>** `i686-w64-mingw32-gcc -o FractalC.exe FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
 - Requires MinGW
 
 ### ---Running the binaries---
-***Linux***: **$** `./FractalCv0.2a-2 [ARGUMENTS]`
+***Linux***: **$** `./FractalCv0.3a-1 [ARGUMENTS]`
 
-***Windows***: **>** `start FractalCv0.2a-2.exe [ARGUMENTS]`
+***Windows***: **>** `start FractalCv0.3a-1.exe [ARGUMENTS]`
 # Input flags;
 ### You can input these in any order you want as long as they all appear no more than once in your input
 ## There are 15 possible flags
