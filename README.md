@@ -1,14 +1,14 @@
 
 
 # FractalC  v0.3a-1
-## Terminal Activated Mandelbrot & Julia Fractal Generator in C
+## Terminal Activated Mandelbrot & Julia Fractal Generator in C/C++
 ![example](https://i.imgur.com/xeWEB2n.png)
 ![logo](https://i.imgur.com/9MKpYtN.png)
 ## Setup;
 
 ### ---Compile From Source---
 ***Linux***: **$** `gcc -o FractalC_linux64 FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
-- Requires GCC (any C compiler will do though), but it should already be installed
+- Requires GCC (any C++ compiler will do though), but it should already be installed
 
 ***Windows x86-x64***: **>** `i686-w64-mingw32-gcc -o FractalC.exe FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
 - Requires MinGW
