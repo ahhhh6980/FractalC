@@ -1,6 +1,6 @@
 
 
-# FractalC  v0.4a-1
+# FractalC  v0.4a-2
 ## Terminal Activated Mandelbrot & Julia Fractal Generator in C/C++
 ![example](https://i.imgur.com/xeWEB2n.png)
 ![logo](https://i.imgur.com/9MKpYtN.png)
@@ -14,15 +14,16 @@
 - Requires MinGW
 
 ### ---Running the binaries---
-***Linux***: **$** `./FractalCv0.3a-1 [ARGUMENTS]`
+***Linux***: **$** `./FractalCv0.4a-2 [ARGUMENTS]`
 
-***Windows***: **>** `start FractalCv0.3a-1.exe [ARGUMENTS]`
+***Windows***: **>** `start FractalCv0.4a-2.exe [ARGUMENTS]`
 # Input flags;
 ### You can input these in any order you want as long as they all appear no more than once in your input
 ## There are 21 possible flags
 * **-mode**
 	- `Mode of 0 = Mandelbrot`
 	- `Mode of 1 = Burning Ship`
+	- `Mode of 2 = Spade Fractal (computationally expensive to render)`
 
 * **-name**
 	- `Name ending in .png or .jpg`
@@ -40,9 +41,14 @@
 	- `The scale tuning of colors`
 	
 * **-res**
-	- `Multiplier of resolution ( Must be less than 101)`
+	- `Multiplier of resolution`
 	- `Image size = 60 * resolution * ratio`
-	- `Pass lower-case "l" for maximum res possible
+	- `Pass lower-case "s" for a resolution width of 1920`
+	- `Pass lower-case "l" for the largest resolution possible`
+	- `Pass "4k" for a resolution width of 3840`
+	- `Pass "8k" for a resolution width of 7680`
+	- `Pass "16k" for a resolution width of 15360`
+	- `Or pass a double`	
 	
 * **-ratio**
 	- `Ratio of image`
@@ -53,8 +59,17 @@
 * **-jPos**
 	- `Julia Coordinates; enter two numbers`
 
-* **-fancy**
-	- `If specified, it will enable trippy colors (slower rendering)`
+* **-orbitTrap**
+	- `Render with orbit trap`
+	- `FORMAT:` `[MODE 1-5] [POS X] [POS Y]`
+	- `Mode 1` **: cross trap**
+	- `Mode 2` **: point trap**
+	- `Mode 3` **: boundary trap**
+	- `Mode 4` **: bound/cross trap**
+	- `Mode 5` **: radial point trap**
+
+* **-exclude**
+	- `if specified, it will disable the exclusion of not rendering the main cardiod/bulb on the mandelbrot set`
 
 * **-zMax**
 	- `if Z.real or z.imag exceeds this value, it will stop the iteration for that pixel`
