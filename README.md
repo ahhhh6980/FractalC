@@ -78,7 +78,7 @@
 	- `If specified, fade will be dark`
 	_ `If unspecified, fade will be light`
 * **-lScale**
-	- `Fade scale**
+	- `Fade scale`
 * **-lExp**
 	- `Fade exponent, similar to scale, idk`
 	
