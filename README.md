@@ -91,6 +91,7 @@
 **Another example;***
 - **$** `./FractalC -pos 0 0 -isJulia -zoom 0.7 -jPos -0.1 -0.65287 -res 25 -cExp 0.2 -cScale 6 -fade in -fadeDark -lScale 0.25 -lExp 1.5 `
 - **>** `start FractalC.exe -pos 0 0 -isJulia -zoom 0.7 -jPos -0.1 -0.65287 -res 25 -cExp 0.2 -cScale 6 -fade in -fadeDark -lScale 0.25 -lExp 1.5 `
+
 ![Example of use with new features](https://i.imgur.com/0aYx7Ig.png)
 # License
 ```
