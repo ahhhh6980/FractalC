@@ -1,6 +1,6 @@
 
 
-# FractalC  v0.3a-1
+# FractalC  v0.4a-1
 ## Terminal Activated Mandelbrot & Julia Fractal Generator in C/C++
 ![example](https://i.imgur.com/xeWEB2n.png)
 ![logo](https://i.imgur.com/9MKpYtN.png)
@@ -19,53 +19,68 @@
 ***Windows***: **>** `start FractalCv0.3a-1.exe [ARGUMENTS]`
 # Input flags;
 ### You can input these in any order you want as long as they all appear no more than once in your input
-## There are 15 possible flags
+## There are 21 possible flags
 * **-mode**
-	`Mode of 0 = Mandelbrot`
-	`Mode of 1 = Burning Ship`
+	- `Mode of 0 = Mandelbrot`
+	- `Mode of 1 = Burning Ship`
 
 * **-name**
-	`Name ending in .png or .jpg`
+	- `Name ending in .png or .jpg`
 	
 * **-pos**
-	 `Complex Coordinate the image is centered on; two numbers`
+	 - `Complex Coordinate the image is centered on; two numbers`
 
 * **-zoom**
-	`Multiplier of magnification`
+	- `Multiplier of magnification`
 
 * **-lim**
-	`The iteration limit`
+	- `The iteration limit`
 
 * **-cExp**
-	`The scale tuning of colors`
+	- `The scale tuning of colors`
 	
 * **-res**
-	`Multiplier of resolution ( Must be less than 101)`
-	`Image size = 60 * resolution * ratio`
+	- `Multiplier of resolution ( Must be less than 101)`
+	- `Image size = 60 * resolution * ratio`
+	- `Pass lower-case "l" for maximum res possible
 	
 * **-ratio**
-	`Ratio of image`
+	- `Ratio of image`
 	
 * **-isJulia**
-	`if specified, it will render a Julia Fractal`
+	- `if specified, it will render a Julia Fractal`
 
 * **-jPos**
-	`Julia Coordinates; enter two numbers`
+	- `Julia Coordinates; enter two numbers`
 
 * **-fancy**
-	`If specified, it will enable trippy colors (slower rendering)`
+	- `If specified, it will enable trippy colors (slower rendering)`
 
 * **-zMax**
-	`if Z.real or z.imag exceeds this value, it will stop the iteration for that pixel`
+	- `if Z.real or z.imag exceeds this value, it will stop the iteration for that pixel`
 
 * **-log**
-	`Specifies number of console logs`
+	- `Specifies number of console logs`
 
 * **-cOffset**
-	`Multiple of 45 to offset the color`
+	- `Multiple of 45 to offset the color`
 
 * **-cScale**
-	`Multiplies frequency of color`
+	- `Multiplies frequency of color`
+* **-bw**
+	- `Specify for black and white`
+* **-inverted**
+	- `Inverts colors`
+* **-fade**
+	- `Specify for a fade effect`
+	- `Input must be "in" or "out"`
+* **-fadeDark**
+	- `If specified, fade will be dark`
+	_ `If unspecified, fade will be light`
+* **-lScale**
+	- `Fade scale**
+* **-lExp**
+	- `Fade exponent, similar to scale, idk`
 	
 **Example Of An Input;**
 - **$** `./FractalC -cExp 1 -cOffset 1 -pos 0 0 -res 10 -ratio 4 3 -fancy -isJulia -jPos -0.8 0.16 -cScale 0.55 `
