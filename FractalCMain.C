@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <cstring>
+#include <string.h>
 #include <inttypes.h>
 #include <time.h> 
 
@@ -21,8 +21,8 @@ typedef struct {
 } complex_t;
 
 typedef struct {
-	uint16_t w;
-	uint16_t h;
+	uint32_t w;
+	uint32_t h;
 } bounds_t;
 
 typedef struct {
@@ -38,8 +38,8 @@ typedef struct {
 } rgba_t;
 
 typedef struct {
-    uint16_t x;
-    uint16_t y;
+    uint32_t x;
+    uint32_t y;
 } pixel_t;
 
 typedef struct {
@@ -65,9 +65,9 @@ inline double map_to_range( double i, range_t r1, range_t r2 ){
 inline uint8_t convert_hue( int theta )
 {
 	theta %= 360;
-	if( theta >= 300 or theta <= 60 ){ return 255; }
-	if( theta < 300 and theta > 240 ){ return ((int)( map_to_range( theta % 60, C_RANGE1, C_RANGE2 ) )); }
-	if( theta > 60  and theta < 120 ){ return ((int)( 255 - map_to_range( theta % 60, C_RANGE1, C_RANGE2 ) )); }
+	if( theta >= 300 || theta <= 60 ){ return 255; }
+	if( theta < 300 && theta > 240 ){ return ((int)( map_to_range( theta % 60, C_RANGE1, C_RANGE2 ) )); }
+	if( theta > 60  && theta < 120 ){ return ((int)( 255 - map_to_range( theta % 60, C_RANGE1, C_RANGE2 ) )); }
 	return 0;
 }
 
@@ -75,15 +75,16 @@ inline rgba_t hsv_to_rgb( int h, double s, double v )
 {
 	rgba_t pureColor = { convert_hue( h ), convert_hue( h - 120 ), convert_hue( h + 120 ), 255 };
 	int m = MAX( MAX(pureColor.r,pureColor.g), pureColor.b );
-    pureColor.r = (int)( (m - ((m - pureColor.r ) * s )) * v );
-    pureColor.g = (int)( (m - ((m - pureColor.g ) * s )) * v );
-    pureColor.b = (int)( (m - ((m - pureColor.b ) * s )) * v );
-	return pureColor;
+	rgba_t output;
+    output.r = (int)( (m - ((m - pureColor.r ) * s )) * v );
+    output.g = (int)( (m - ((m - pureColor.g ) * s )) * v );
+    output.b = (int)( (m - ((m - pureColor.b ) * s )) * v );
+	return output;
 }
 
 // Get Frame size
 inline bounds_t get_frame( range_t ratio, double res ){
-	return { (uint16_t)( res * ratio.a * 60 ), (uint16_t)( res * ratio.b * 60 ) };
+	return { (long long unsigned int)( res * ratio.a * 60 ), (long long unsigned int)( res * ratio.b * 60 ) };
 }
 
 double resolution;
@@ -110,7 +111,6 @@ double vbv;
 
 time_t start;
 time_t totalT;
-uint8_t* pixels;
 rgba_t rgba;
 i_out_t out;
 
@@ -122,8 +122,20 @@ double cOffset;
 double cMult;
 char* n;
 
-inline complex_t c_div_n( complex_t a, int b){
-	return { a.real / b, a.imag / b };
+double lightnessScale;
+double lightnessExponent;
+int monochrome;
+int tempSv;
+
+int fade;
+
+int largest;
+int presub;
+int invert;
+int fadeDark;
+
+inline complex_t c_div_n( complex_t a, double b){
+	return { a.real / (double)(b), a.imag / (double)(b) };
 }
 
 inline complex_t c_add( complex_t a, complex_t b ){
@@ -135,7 +147,7 @@ inline complex_t c_mult( complex_t a, complex_t b ){
 }
 
 inline complex_t n_pow_c( double n, complex_t c ){
-	return c_mult( complex_t { cos( c.imag * log( n ) ), sin( c.imag * log( n ) ) } ,complex_t { pow(n,c.real) , 0 } );
+	return c_mult( complex_t { cos( c.imag * log( n ) ), sin( c.imag * log( n ) ) } ,complex_t { pow( n, c.real ) , 0 } );
 }
 
 inline complex_t conjugate( complex_t c ){
@@ -214,14 +226,22 @@ i_out_t compute( pixel_t pixel )
 
 	double p = sqrt( (c.real - 0.25)*(c.real - 0.25) + c.imag*c.imag );
 
-	if( (mode==1) or (c.real > p - 2*p*p + 0.25) && ((c.real+1)*(c.real+1) + c.imag*c.imag  > 0.0625)  ){
+	if( (mode!=0) || ((c.real > p - 2*p*p + 0.25) && ((c.real+1)*(c.real+1) + c.imag*c.imag  > 0.0625)  )){
 		while(i < limit){
 			//z = {abs(z.real), abs(z.imag)};
-			if(mode==1){
-				z = { abs(z.real), abs(z.imag) };
-				z = c_add( c_mult( z, z ), c );
-			} else {
-				z = c_add( c_mult( z, z ), c );
+			switch(mode){
+				case -1:
+					return { -1, d };
+				case 0:
+					z = c_add( c_mult( z, z ), c );
+					break;
+				case 1:
+					z = { abs(z.real), abs(z.imag) };
+					z = c_add( c_mult( z, z ), c );
+					break;
+				case 2:
+					z = c_add( c_pow_c( z, z ), c_div( z, c_add( c, complex_t {0.001, 0.001} ) ) );
+					break;
 			}
 
 			if( z.real*z.real > zLimit || z.imag*z.imag > zLimit ){
@@ -245,23 +265,24 @@ void draw_image( char name[] )
 	yRange = {  ( (-(ratio.b/ratio.a) / zoom ) + position.imag ), (( (ratio.b/ratio.a) / zoom ) + position.imag )};
 	printf("X RANGE: {%lf, %lf}\n", xRange.a, xRange.b);
 	printf("Y RANGE: {%lf, %lf}\n", yRange.a, yRange.b);
-	pixels = new uint8_t[frame.w * frame.h * 3];
+	uint8_t* pixels = (uint8_t* ) malloc((uint64_t)(frame.w) * (uint64_t)(frame.h) * (uint64_t)(3) * sizeof(uint8_t));
 	rgba = {0,0,0,0};
 	out = {0,0};
 
 	double v = 0.0;
-	int index = 0;
+	uint64_t index = 0;
 	range_t range1 = {0.0, (double)(limit)};
 	range_t range2 = {0.0, 360};
-	for(int y = 0; y<frame.h; y++){
-		for(int x = 0; x < frame.w; x++){
+	double valueChange;
+	for(uint16_t y = 0; y < frame.h; y++){
+		for(uint16_t x = 0; x < frame.w; x++){
 			for(double fy = 0.0; fy < logs; fy++ ){
 				if( iterator / vbv == fy/logs ){
 					printf("log %d: %d%%, @%lds\n", (int)( fy + 1 ), (int)((iterator / vbv ) * 100), time(NULL)-start );
 				}
 			}
 			out = compute( pixel_t { x, y } );
-			if( out.i==-1 ){
+			if( out.i == -1 ){
 				pixels[index++] = 0;
    				pixels[index++] = 0;
    				pixels[index++] = 0;
@@ -272,28 +293,49 @@ void draw_image( char name[] )
 					v = scale_to_range( out.i, range1, range2, exponent);
 				}
 
-				rgba = hsv_to_rgb( (v * cMult) + cOffset , 1, 1 );
-			
-				pixels[index++] = 255 - rgba.r ;
-   				pixels[index++] = 255 - rgba.g ;
-   				pixels[index++] = 255 - rgba.b ;
+				switch(fade){
+					case -1:
+						valueChange = lightnessScale * pow((double)(out.i), lightnessExponent);
+						rgba = hsv_to_rgb( ((invert==1) ? 360 - ((v * cMult) + cOffset) : ((v * cMult) + cOffset)) , 1, 1 - scale_to_range(valueChange, range_t { 0, 2500 }, range_t { 0, 1 }, 0.5 ) );
+						break;
+					case 0:
+						rgba = hsv_to_rgb( ((invert==1) ? 360 - ((v * cMult) + cOffset) : ((v * cMult) + cOffset)), 1, 1 );
+						break;
+					case 1:
+						valueChange = lightnessScale * pow((double)(out.i), lightnessExponent);
+						rgba = hsv_to_rgb( ((invert==1) ? 360 - ((v * cMult) + cOffset) : ((v * cMult) + cOffset)) , 1, scale_to_range(valueChange, range_t { 0, 2500 }, range_t { 0, 1 }, 0.5 ) );
+						break;
+				}
 				
+
+				if(monochrome==1){
+					tempSv = (int)(255.0 * scale_to_range( out.i, range_t { 0, 2500 }, range_t { 0, 1 }, cMult ));
+					pixels[index++] = tempSv;
+   					pixels[index++] = tempSv;
+   					pixels[index++] = tempSv;
+				} else {
+					pixels[index++] = abs(rgba.r + presub);
+   					pixels[index++] = abs(rgba.g + presub);
+   					pixels[index++] = abs(rgba.b + presub);
+				}
+
 			}
 			iterator++;
 		}
 	}
 
-	printf("please wait while it's saving...\n");
+	printf("\nplease wait while it's saving...\n");
 	stbi_write_png(name, frame.w, frame.h, 3, pixels, frame.w * 3);
 
 	totalT = time(NULL)-start;
 
 	if(totalT!=1){
-		printf("Finished and saved in %ld seconds\n",totalT);
+		printf("\nFinished and saved in %ld seconds\n",totalT);
 	} else {
-		printf("Finished and saved in %ld second\n",totalT);
+		printf("\nFinished and saved in %ld second\n",totalT);
 	}
-
+	free(pixels);
+	printf("\nPixel Array is now free from memory\nIt is now safe to close the program\n\n");
 }
 
 const static struct{
@@ -314,11 +356,17 @@ const static struct{
 	{"-log", 12},
 	{"-cOffset", 13},
 	{"-cScale", 14},
-	{"-name", 15}
+	{"-name", 15},
+	{"-bw", 16},
+	{"-lScale", 17},
+	{"-lExp", 18},
+	{"-fadeDark", 19},
+	{"-fade", 20},
+	{"-inverted", 21}
 };
 
 int get_key( const char *key ){
-	for( int i = 0; i < 14; ++i ){
+	for( int i = 0; i < 21; ++i ){
 		if( !strcmp(key, check_key[i].key) )
 			return check_key[i].v;    
 	}
@@ -327,7 +375,7 @@ int get_key( const char *key ){
 
 int main(int argc, char *argv[])
 {	
-
+	printf("\n");
 	n = "generatedFractal.png";
 	mode = 0;
 	position = { -0.75, 0 };
@@ -343,6 +391,14 @@ int main(int argc, char *argv[])
 	logs = 10;
 	cOffset = 0;
 	cMult = 1;
+	largest = 0;
+	lightnessScale = 1;
+	lightnessExponent = 2;
+	monochrome = 0;
+	fade = 0;
+	presub = -255;
+	invert = 0;
+	fadeDark = 0;
 	for(int i = 0; i < argc; ++i){
 		switch( get_key( argv[i] ) ) {
 			case 1:
@@ -361,7 +417,11 @@ int main(int argc, char *argv[])
 				exponent = strtod(argv[i+1], NULL);
 				break;
 			case 6:
-				resolution = strtod(argv[i+1], NULL);
+				if(strcmp(argv[i+1], "l")==0){	
+					largest = 1;
+				} else {
+					resolution = strtod(argv[i+1], NULL);
+				}
 				break;
 			case 7:
 				ratio = {strtod(argv[i+1], NULL), strtod(argv[i+2], NULL)};
@@ -390,10 +450,46 @@ int main(int argc, char *argv[])
 			case 15:
 				n = argv[i+1];
 				break;
+			case 16:
+				monochrome = 1;
+				break;
+			case 17:
+				lightnessScale = strtod(argv[i+1], NULL);
+				break;
+			case 18:
+				lightnessExponent = strtod(argv[i+1], NULL);
+				break;
+			case 19:
+				fadeDark = 1;
+				break;
+			case 20:
+				if( strcmp(argv[i+1], "out" ) == 0 ){
+					//cOffset+=4.5;
+					//presub = 0;
+					fade = -1;
+				} else if ( strcmp(argv[i+1], "in" ) == 0 ) {
+					//presub = 0;
+					fade = 1;
+				} 
+				break;
+			case 21:
+				invert = 1;
+				break;
 		}
+	}
+	if( fade!=0 && fadeDark==1 ){ presub = 0; }
+	if(largest==1){
+		resolution = sqrt( ((INT_MAX/(3 * 60 * 60)) / ratio.a) / ratio.b ) ;
 	}
 	
 	frame = get_frame( ratio, resolution );
+	printf("%s\n", n);
+	printf("F    %lld\n", (long long unsigned int)(3) * (long long unsigned int)(frame.w) * (long long unsigned int)(frame.w));
+	printf("IMAX %lld\n", INT_MAX);
+	if( resolution > sqrt( ((INT_MAX/(3 * 60 * 60)) / ratio.a) / ratio.b )  ){
+		printf("!!SPECIFIED RESOLUTION TOO  LARGE!!\n    EXITING PROGRAM BECAUSE THE\n!!IMAGE WOULDN'T SAVE EVEN IF RAN!!\n\n");
+		exit(0);
+	}
 	printf("Starting [%dpx, %dpx] (%.5g:%.5g)\n", frame.w, frame.h, ratio.a, ratio.b);
 	draw_image( n );
 
