@@ -87,6 +87,11 @@
 - **>** `start FractalC.exe -cExp 1 -cOffset 1 -pos 0 0 -res 10 -ratio 4 3 -fancy -isJulia -jPos -0.8 0.16 -cScale 0.55 `
 
 ![Input example](https://i.imgur.com/lZEAXW2.png)
+
+**Another example;***
+- **$** `./FractalC -pos 0 0 -isJulia -zoom 0.7 -jPos -0.1 -0.65287 -res 25 -cExp 0.2 -cScale 6 -fade in -fadeDark -lScale 0.25 -lExp 1.5 `
+- **>** `start FractalC.exe -pos 0 0 -isJulia -zoom 0.7 -jPos -0.1 -0.65287 -res 25 -cExp 0.2 -cScale 6 -fade in -fadeDark -lScale 0.25 -lExp 1.5 `
+![Example of use with new features](https://i.imgur.com/0aYx7Ig.png)
 # License
 ```
 MIT License
