@@ -13,7 +13,8 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-#define E exp(1)
+#define CONST_E exp(1)
+#define CONST_PI acos(-1)
 
 typedef struct {
 	double real;
@@ -101,7 +102,7 @@ range_t yRange;
 uint16_t limit;
 double zLimit;
 
-bool fancyColors;
+bool orbitTrap;
 
 double exponent;
 double logs;
@@ -133,13 +134,26 @@ int largest;
 int presub;
 int invert;
 int fadeDark;
+int orbitMode;
+
+int exclude;
+
+complex_t orbitTrapPos;
 
 inline complex_t c_div_n( complex_t a, double b){
 	return { a.real / (double)(b), a.imag / (double)(b) };
 }
 
+inline complex_t c_mult_n( complex_t a, double b){
+	return { a.real*b, a.imag*b };
+}
+
 inline complex_t c_add( complex_t a, complex_t b ){
 	return { a.real+b.real , a.imag+b.imag };
+}
+
+inline complex_t c_sub( complex_t a, complex_t b ){
+	return { a.real - b.real, a.imag - b.imag};
 }
 
 inline complex_t c_mult( complex_t a, complex_t b ){
@@ -158,24 +172,32 @@ inline complex_t c_div( complex_t a, complex_t b ){
 	return c_div_n( c_mult( a, conjugate(b) ) , (b.real*b.real + b.imag*b.imag));
 }
 
-inline complex_t c_pow_c( complex_t a, complex_t b )
-{
-	if ( a.real == 0.0 && a.imag == 0.0 )
-		return { 0, 0 };
-	if ( b.real == 0.0 && b.imag == 0.0 )
-		return { 1, 0 }; 
-	complex_t pa = n_pow_c( a.real*a.real + a.imag*a.imag, c_div_n( b, 2 ) );
-	complex_t pb = n_pow_c( E, c_mult(  c_mult( complex_t {0,1}, b)  , complex_t { atan( b.imag / a.real ), 0 } ) );
-	return  c_mult( pa, pb );
-}
-
 // Complex "Modulus" (Distance from 0,0)
 inline double modulus( complex_t c ){
 	return sqrt( c.real * c.real + c.imag * c.imag );
 }
 
 inline double arg( complex_t c ){
-	return atan(c.imag/c.real);
+	return atan( c.imag / abs(c.real) );
+}
+
+inline complex_t c_pow_c( complex_t a, complex_t b ){
+
+	if ( a.real == 0.0 && a.imag == 0.0 ){
+		return { 0, 0 };
+	}
+	if ( b.real == 0.0 && b.imag == 0.0 ){
+		return { 1, 0 }; 
+	}
+	
+	double temp1 = ( a.real*a.real + a.imag*a.imag );
+	double temp2 = b.real * arg(a) + ( (b.imag / 2) * log( temp1 ) );
+
+	double va = pow( temp1, b.real / 2 );
+	double vb = exp( -b.imag * arg(a) );
+
+	return c_mult_n( complex_t { cos(temp2), sin(temp2) }, va*vb );
+
 }
 
 // Complex power function!
@@ -216,7 +238,6 @@ i_out_t compute( pixel_t pixel )
 	float d = 1e20;
 
 	uint16_t i = 0;
-	//pixel_t pixel = rgba_to_pixel( color );
 
 	complex_t c = { map_to_range( pixel.x, range_t { 0, (double)(frame.w) }, xRange), map_to_range( pixel.y, range_t { 0, (double)(frame.h) }, yRange) };
 	complex_t z = c;
@@ -226,9 +247,8 @@ i_out_t compute( pixel_t pixel )
 
 	double p = sqrt( (c.real - 0.25)*(c.real - 0.25) + c.imag*c.imag );
 
-	if( (mode!=0) || ((c.real > p - 2*p*p + 0.25) && ((c.real+1)*(c.real+1) + c.imag*c.imag  > 0.0625)  )){
+	if( (exclude==0) || (mode!=0) || ((c.real > p - 2*p*p + 0.25) && ((c.real+1)*(c.real+1) + c.imag*c.imag  > 0.0625)  )){
 		while(i < limit){
-			//z = {abs(z.real), abs(z.imag)};
 			switch(mode){
 				case -1:
 					return { -1, d };
@@ -240,7 +260,7 @@ i_out_t compute( pixel_t pixel )
 					z = c_add( c_mult( z, z ), c );
 					break;
 				case 2:
-					z = c_add( c_pow_c( z, z ), c_div( z, c_add( c, complex_t {0.001, 0.001} ) ) );
+					z = c_add( c_pow_c( z, z ), c_div( z, c ) );
 					break;
 			}
 
@@ -249,7 +269,25 @@ i_out_t compute( pixel_t pixel )
 			}
 
 			i++;
-			if(fancyColors){ d = MIN( abs( modulus(z) ) , d); }
+			if(orbitTrap){ 
+				switch(orbitMode){
+					case 1:
+						d = MIN( abs( modulus(z) - modulus( c_sub(z, orbitTrapPos) ) ), d );
+						break;
+					case 2:
+						d = MIN( abs( modulus( c_sub(z, orbitTrapPos) ) ), d );
+						break;
+					case 3:
+						d = MIN( abs( modulus(z) - modulus( orbitTrapPos ) ), d );
+						break;
+					case 4:
+						d = MIN( abs( modulus(z) - modulus( c_sub(c, orbitTrapPos) ) ), d );
+						break;
+					case 5:
+						d = MIN( abs( modulus( c_sub(c, orbitTrapPos) ) ), d );
+						break;
+				}
+			}
 		}
 	} else { return { -1, d }; }
 	return { -1, d };
@@ -260,11 +298,11 @@ void draw_image( char name[] )
 
 	start = time(NULL);
 	iterator = 0.0;
-	vbv = ( double )(frame.w * frame.h) / 2;
+	vbv = ((double)(frame.w)*(double)(frame.h));
 	xRange = { ( -1 / zoom ) + position.real, ( 1 / zoom ) + position.real };
 	yRange = {  ( (-(ratio.b/ratio.a) / zoom ) + position.imag ), (( (ratio.b/ratio.a) / zoom ) + position.imag )};
-	printf("X RANGE: {%lf, %lf}\n", xRange.a, xRange.b);
-	printf("Y RANGE: {%lf, %lf}\n", yRange.a, yRange.b);
+	printf("\nX RANGE: {%lf, %lf}\n", xRange.a, xRange.b);
+	printf("Y RANGE: {%lf, %lf}\n\n", yRange.a, yRange.b);
 	uint8_t* pixels = (uint8_t* ) malloc((uint64_t)(frame.w) * (uint64_t)(frame.h) * (uint64_t)(3) * sizeof(uint8_t));
 	rgba = {0,0,0,0};
 	out = {0,0};
@@ -274,12 +312,15 @@ void draw_image( char name[] )
 	range_t range1 = {0.0, (double)(limit)};
 	range_t range2 = {0.0, 360};
 	double valueChange;
+	double logIncrement = (int)(vbv / (double)(logs));
+	double nextLog = logIncrement;
+	double currentLog = 0;
 	for(uint16_t y = 0; y < frame.h; y++){
 		for(uint16_t x = 0; x < frame.w; x++){
-			for(double fy = 0.0; fy < logs; fy++ ){
-				if( iterator / vbv == fy/logs ){
-					printf("log %d: %d%%, @%lds\n", (int)( fy + 1 ), (int)((iterator / vbv ) * 100), time(NULL)-start );
-				}
+			if( (float)(index/3) >= nextLog ){
+				nextLog += logIncrement;
+				currentLog += 1;
+				printf("log %d: %d%%, @%lds\n", (int)( currentLog ), (int)(( (double)(x) + ( ((double)(y)+1.0) * (double)(frame.h) ) ) / (double)(logs) * 100), time(NULL)-start );
 			}
 			out = compute( pixel_t { x, y } );
 			if( out.i == -1 ){
@@ -287,7 +328,7 @@ void draw_image( char name[] )
    				pixels[index++] = 0;
    				pixels[index++] = 0;
 			} else {
-				if(fancyColors){
+				if(orbitTrap){
 					v = scale_to_range( out.i, range1, range2, exponent*out.d);
 				} else {
 					v = scale_to_range( out.i, range1, range2, exponent);
@@ -309,7 +350,7 @@ void draw_image( char name[] )
 				
 
 				if(monochrome==1){
-					tempSv = (int)(255.0 * scale_to_range( out.i, range_t { 0, 2500 }, range_t { 0, 1 }, cMult ));
+					tempSv = (abs(rgba.r + presub)+abs(rgba.g + presub)+abs(rgba.b + presub))/3;
 					pixels[index++] = tempSv;
    					pixels[index++] = tempSv;
    					pixels[index++] = tempSv;
@@ -324,7 +365,7 @@ void draw_image( char name[] )
 		}
 	}
 
-	printf("\nplease wait while it's saving...\n");
+	printf("\nplease wait while it's saving... @%lds\n", time(NULL)-start);
 	stbi_write_png(name, frame.w, frame.h, 3, pixels, frame.w * 3);
 
 	totalT = time(NULL)-start;
@@ -351,7 +392,7 @@ const static struct{
 	{"-ratio", 7},
 	{"-isJulia", 8},
 	{"-jPos", 9},
-	{"-fancy", 10},
+	{"-orbitTrap", 10},
 	{"-zMax", 11},
 	{"-log", 12},
 	{"-cOffset", 13},
@@ -362,13 +403,33 @@ const static struct{
 	{"-lExp", 18},
 	{"-fadeDark", 19},
 	{"-fade", 20},
-	{"-inverted", 21}
+	{"-inverted", 21},
+	{"-exclude", 22}
 };
 
 int get_key( const char *key ){
-	for( int i = 0; i < 21; ++i ){
+	for( int i = 0; i < 22; ++i ){
 		if( !strcmp(key, check_key[i].key) )
 			return check_key[i].v;    
+	}
+	return 0;
+}
+
+const static struct{
+	const char* key;
+	int v;
+} check_res_key [] = {
+	{"s", 1},
+	{"4k", 2},
+	{"8k", 3},
+	{"16k", 4},
+	{"l", 5}
+};
+
+int get_res_key( const char *key ){
+	for( int i = 0; i < 5; ++i ){
+		if( !strcmp(key, check_res_key[i].key) )
+			return check_res_key[i].v;    
 	}
 	return 0;
 }
@@ -386,7 +447,7 @@ int main(int argc, char *argv[])
 	ratio = { 4.0, 3.5 };
 	isJulia = 0;
 	jCoord = {-0.7269, 0.188};
-	fancyColors = 0;
+	orbitTrap = 0;
 	zLimit = 1e10;
 	logs = 10;
 	cOffset = 0;
@@ -399,6 +460,9 @@ int main(int argc, char *argv[])
 	presub = -255;
 	invert = 0;
 	fadeDark = 0;
+	orbitMode = 1;
+	orbitTrapPos = { 0, 0 };
+	exclude = 1;
 	for(int i = 0; i < argc; ++i){
 		switch( get_key( argv[i] ) ) {
 			case 1:
@@ -417,10 +481,25 @@ int main(int argc, char *argv[])
 				exponent = strtod(argv[i+1], NULL);
 				break;
 			case 6:
-				if(strcmp(argv[i+1], "l")==0){	
-					largest = 1;
-				} else {
-					resolution = strtod(argv[i+1], NULL);
+				switch( get_res_key( argv[i+1] ) ){
+					case 0:
+						resolution = strtod(argv[i+1], NULL);
+						break;
+					case 1:
+						resolution = ( 1920.0 / 60.0 ) / ratio.a;
+						break;
+					case 2:
+						resolution = ( 3840.0 / 60.0 ) / ratio.a;
+						break;
+					case 3:
+						resolution = ( 7680.0 / 60.0 ) / ratio.a;
+						break;
+					case 4:
+						resolution = ( 15360.0 / 60.0 ) / ratio.a ;
+						break;
+					case 5:
+						largest = 1;
+						break;
 				}
 				break;
 			case 7:
@@ -433,7 +512,9 @@ int main(int argc, char *argv[])
 				jCoord = {strtod(argv[i+1], NULL), strtod(argv[i+2], NULL)};
 				break;
 			case 10:
-				fancyColors = 1;
+				orbitTrap = 1;
+				orbitMode = atoi(argv[i+1]);
+				orbitTrapPos = {strtod(argv[i+2], NULL), strtod(argv[i+3], NULL)};
 				break;
 			case 11:
 				zLimit = strtod(argv[i+1], NULL);
@@ -464,16 +545,16 @@ int main(int argc, char *argv[])
 				break;
 			case 20:
 				if( strcmp(argv[i+1], "out" ) == 0 ){
-					//cOffset+=4.5;
-					//presub = 0;
 					fade = -1;
 				} else if ( strcmp(argv[i+1], "in" ) == 0 ) {
-					//presub = 0;
 					fade = 1;
 				} 
 				break;
 			case 21:
 				invert = 1;
+				break;
+			case 22:
+				exclude = 0;
 				break;
 		}
 	}
@@ -483,9 +564,6 @@ int main(int argc, char *argv[])
 	}
 	
 	frame = get_frame( ratio, resolution );
-	printf("%s\n", n);
-	printf("F    %lld\n", (long long unsigned int)(3) * (long long unsigned int)(frame.w) * (long long unsigned int)(frame.w));
-	printf("IMAX %lld\n", INT_MAX);
 	if( resolution > sqrt( ((INT_MAX/(3 * 60 * 60)) / ratio.a) / ratio.b )  ){
 		printf("!!SPECIFIED RESOLUTION TOO  LARGE!!\n    EXITING PROGRAM BECAUSE THE\n!!IMAGE WOULDN'T SAVE EVEN IF RAN!!\n\n");
 		exit(0);
@@ -495,4 +573,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-//./FractalC 0 1.png 0 0 8 10000 1 0.25 16 9 1 -0.041747 0.699 0 1e2 20 3 10
