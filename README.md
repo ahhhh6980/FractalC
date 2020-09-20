@@ -1,6 +1,6 @@
 
 
-# FractalC  v0.4a-2
+# FractalC  v0.4a-3
 ## Terminal Activated Mandelbrot & Julia Fractal Generator in C/C++
 ![example](https://i.imgur.com/xeWEB2n.png)
 ![logo](https://i.imgur.com/9MKpYtN.png)
@@ -14,9 +14,9 @@
 - Requires MinGW
 
 ### ---Running the binaries---
-***Linux***: **$** `./FractalCv0.4a-2 [ARGUMENTS]`
+***Linux***: **$** `./FractalCv0.4a-3 [ARGUMENTS]`
 
-***Windows***: **>** `start FractalCv0.4a-2.exe [ARGUMENTS]`
+***Windows***: **>** `start FractalCv0.4a-3.exe [ARGUMENTS]`
 # Input flags;
 ### You can input these in any order you want as long as they all appear no more than once in your input
 ## There are 21 possible flags
