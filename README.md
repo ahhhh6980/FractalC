@@ -3,7 +3,7 @@
 # FractalC  v0.4a-3
 ## Terminal Activated Mandelbrot & Julia Fractal Generator in C/C++
 ![example](https://i.imgur.com/xeWEB2n.png)
-![logo](https://i.imgur.com/9MKpYtN.png)
+![logo](https://i.imgur.com/LbFowGf.png)
 ## Setup;
 
 ### ---Compile From Source---
