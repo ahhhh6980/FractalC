@@ -99,7 +99,7 @@
 * **-cSpace**
 	- `coordinate space`
 	- `input an integer then a double`
-	- `first number is the mode (1 or 2)
+	- `first number is the mode (1 or 2)`
 	- `second number is an exponential to warp the cSpace`
 **Example Of An Input;**
 - **$** `./FractalC -pos 0 0 -isJulia -zoom 0.7 -jPos -0.1 -0.65287 -res 25 -cExp 0.2 -cScale 6 -fade in -fadeDark -lScale 0.25 -lExp 1.5 `
