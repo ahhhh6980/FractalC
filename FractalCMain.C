@@ -320,7 +320,7 @@ void draw_image( char name[] )
 			if( (float)(index/3) >= nextLog ){
 				nextLog += logIncrement;
 				currentLog += 1;
-				printf("log %d: %d%%, @%lds\n", (int)( currentLog ), (int)(( (double)(x) + ( ((double)(y)+1.0) * (double)(frame.h) ) ) / (double)(logs) * 100), time(NULL)-start );
+				printf("log %d: %d%%, @%lds\n", (int)( currentLog ), (int)( ((double)(currentLog) / (double)(logs) ) * 100 ), time(NULL)-start );
 			}
 			out = compute( pixel_t { x, y } );
 			if( out.i == -1 ){
