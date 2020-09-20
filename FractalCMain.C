@@ -140,6 +140,9 @@ int exclude;
 
 complex_t orbitTrapPos;
 
+int coordSpace;
+double coordSpaceExp;
+
 inline complex_t c_div_n( complex_t a, double b){
 	return { a.real / (double)(b), a.imag / (double)(b) };
 }
@@ -170,6 +173,10 @@ inline complex_t conjugate( complex_t c ){
 
 inline complex_t c_div( complex_t a, complex_t b ){
 	return c_div_n( c_mult( a, conjugate(b) ) , (b.real*b.real + b.imag*b.imag));
+}
+
+inline complex_t n_div_c( double a, complex_t b ){
+	return c_div_n( c_mult_n(  conjugate(b), a ) , (b.real*b.real + b.imag*b.imag));
 }
 
 // Complex "Modulus" (Distance from 0,0)
@@ -238,8 +245,17 @@ i_out_t compute( pixel_t pixel )
 	float d = 1e20;
 
 	uint16_t i = 0;
-
+	
 	complex_t c = { map_to_range( pixel.x, range_t { 0, (double)(frame.w) }, xRange), map_to_range( pixel.y, range_t { 0, (double)(frame.h) }, yRange) };
+
+	switch(coordSpace){
+		case 1:
+			c =  c_pow(n_div_c( 1, c ), coordSpaceExp) ;
+			break;
+		case 2:
+			c =  n_div_c( 1, c_pow(n_div_c( 1, c ), coordSpaceExp) ) ;
+			break;
+	}
 	complex_t z = c;
 	if(isJulia==1){
 		c = jCoord;
@@ -404,11 +420,12 @@ const static struct{
 	{"-fadeDark", 19},
 	{"-fade", 20},
 	{"-inverted", 21},
-	{"-exclude", 22}
+	{"-exclude", 22},
+	{"-cSpace", 23}
 };
 
 int get_key( const char *key ){
-	for( int i = 0; i < 22; ++i ){
+	for( int i = 0; i < 23; ++i ){
 		if( !strcmp(key, check_key[i].key) )
 			return check_key[i].v;    
 	}
@@ -463,6 +480,8 @@ int main(int argc, char *argv[])
 	orbitMode = 1;
 	orbitTrapPos = { 0, 0 };
 	exclude = 1;
+	coordSpace = 0;
+	coordSpaceExp = 1;
 	for(int i = 0; i < argc; ++i){
 		switch( get_key( argv[i] ) ) {
 			case 1:
@@ -555,6 +574,10 @@ int main(int argc, char *argv[])
 				break;
 			case 22:
 				exclude = 0;
+				break;
+			case 23:
+				coordSpace = atoi(argv[i+1]);
+				coordSpaceExp = strtod(argv[i+2], NULL);
 				break;
 		}
 	}

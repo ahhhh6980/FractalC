@@ -1,9 +1,9 @@
 
 
-# FractalC  v0.4a-3
+# FractalC  v0.4a-4
 ## Terminal Activated Mandelbrot & Julia Fractal Generator in C/C++
 ![example](https://i.imgur.com/xeWEB2n.png)
-![logo](https://i.imgur.com/9MKpYtN.png)
+![logo](https://i.imgur.com/LbFowGf.png)
 ## Setup;
 
 ### ---Compile From Source---
@@ -96,7 +96,11 @@
 	- `Fade scale`
 * **-lExp**
 	- `Fade exponent, similar to scale, idk`
-	
+* **-cSpace**
+	- `coordinate space`
+	- `input an integer then a double`
+	- `first number is the mode (1 or 2)
+	- `second number is an exponential to warp the cSpace`
 **Example Of An Input;**
 - **$** `./FractalC -pos 0 0 -isJulia -zoom 0.7 -jPos -0.1 -0.65287 -res 25 -cExp 0.2 -cScale 6 -fade in -fadeDark -lScale 0.25 -lExp 1.5 `
 - **>** `start FractalC.exe -pos 0 0 -isJulia -zoom 0.7 -jPos -0.1 -0.65287 -res 25 -cExp 0.2 -cScale 6 -fade in -fadeDark -lScale 0.25 -lExp 1.5 `
@@ -126,5 +130,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
 
 
