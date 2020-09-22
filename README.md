@@ -84,7 +84,7 @@
 	- `Multiplies frequency of color`
 * **-bw**
 	- `Specify for black and white`
-* **-inverted**
+* **-~~inverted~~ (will be reimplemented) **
 	- `Inverts colors`
 * **-fade**
 	- `Specify for a fade effect`
