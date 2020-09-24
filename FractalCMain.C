@@ -17,8 +17,8 @@
 #define CONST_PI acos(-1)
 
 typedef struct {
-	double real;
-	double imag;
+	long double real;
+	long double imag;
 } complex_t;
 
 typedef struct {
@@ -51,7 +51,7 @@ typedef struct {
 typedef struct {
 	double h;
 	double s;
-	double l;
+	double v;
 } hsv_t;
 
 // Maps i from range a to range b!
@@ -63,6 +63,7 @@ inline double map_to_range( double i, range_t r1, range_t r2 ){
 
 #define C_RANGE1 range_t {0, 60}
 #define C_RANGE2 range_t {0, 255}
+
 inline uint8_t convert_hue( int theta )
 {
 	theta %= 360;
@@ -81,6 +82,15 @@ inline rgba_t hsv_to_rgb( int h, double s, double v )
     output.g = (int)( (m - ((m - pureColor.g ) * s )) * v );
     output.b = (int)( (m - ((m - pureColor.b ) * s )) * v );
 	return output;
+}
+
+inline rgba_t revalue( rgba_t color, double s, double v ){
+    int m = MAX( MAX(color.r, color.g), color.b );
+	rgba_t output;
+    output.r = (int)( (m - ((m - color.r ) * s )) * v );
+    output.g = (int)( (m - ((m - color.g ) * s )) * v );
+    output.b = (int)( (m - ((m - color.b ) * s )) * v );
+    return output;
 }
 
 // Get Frame size
@@ -140,8 +150,30 @@ int exclude;
 
 complex_t orbitTrapPos;
 
+
 int coordSpace;
 double coordSpaceExp;
+int coordSpaceC;
+complex_t coordSpaceExpC;
+
+int tW;
+int tH;
+int tC;
+unsigned char* tImage;
+rgba_t cColor;
+int useTexture;
+
+int rMode;
+
+double theta;
+
+bounds_t texOffset;
+range_t texScale;
+double texRot;
+complex_t texRadialPos;
+int setTexPos;
+
+char* tN;
 
 inline complex_t c_div_n( complex_t a, double b){
 	return { a.real / (double)(b), a.imag / (double)(b) };
@@ -188,6 +220,14 @@ inline double arg( complex_t c ){
 	return atan( c.imag / abs(c.real) );
 }
 
+inline complex_t rotate_theta( complex_t c, double theta ){
+    double angle = atan2(c.imag,c.real) - ((theta * CONST_PI) / 180.0);
+    double m = modulus(c);
+	return complex_t { m*cos(angle), m*sin(angle) } ;
+}
+
+
+
 inline complex_t c_pow_c( complex_t a, complex_t b ){
 
 	if ( a.real == 0.0 && a.imag == 0.0 ){
@@ -208,7 +248,7 @@ inline complex_t c_pow_c( complex_t a, complex_t b ){
 }
 
 // Complex power function!
-inline complex_t c_pow( complex_t c, uint8_t n )
+inline complex_t c_pow( complex_t c, uint32_t n )
 {
 	if( n == 1 ){ return c; }
 	complex_t temp = c_pow( c, n/2 );
@@ -246,17 +286,36 @@ i_out_t compute( pixel_t pixel )
 
 	uint16_t i = 0;
 	
+    
 	complex_t c = { map_to_range( pixel.x, range_t { 0, (double)(frame.w) }, xRange), map_to_range( pixel.y, range_t { 0, (double)(frame.h) }, yRange) };
-
+    
+    if(theta!=0){
+        c = c_sub(c,position);
+        c = c_add(rotate_theta( c, theta ),position);
+    }
+    
 	switch(coordSpace){
 		case 1:
-			c =  c_pow(n_div_c( 1, c ), coordSpaceExp) ;
+			c =  c_pow(n_div_c( 1.0, c ), coordSpaceExp) ;
 			break;
 		case 2:
-			c =  n_div_c( 1, c_pow(n_div_c( 1, c ), coordSpaceExp) ) ;
+			c =  n_div_c( 1, c_pow(n_div_c( 1.0, c ), coordSpaceExp) ) ;
 			break;
 	}
+
+	switch(coordSpaceC){
+		case 1:
+			c =  c_pow_c(n_div_c( 1.0, c ), coordSpaceExpC) ;
+			break;
+		case 2:
+			c =  n_div_c( 1, c_pow_c(n_div_c( 1.0, c ), coordSpaceExpC) ) ;
+			break;
+	}
+
+	
+
 	complex_t z = c;
+
 	if(isJulia==1){
 		c = jCoord;
 	}
@@ -265,6 +324,7 @@ i_out_t compute( pixel_t pixel )
 
 	if( (exclude==0) || (mode!=0) || ((c.real > p - 2*p*p + 0.25) && ((c.real+1)*(c.real+1) + c.imag*c.imag  > 0.0625)  )){
 		while(i < limit){
+
 			switch(mode){
 				case -1:
 					return { -1, d };
@@ -278,11 +338,27 @@ i_out_t compute( pixel_t pixel )
 				case 2:
 					z = c_add( c_pow_c( z, z ), c_div( z, c ) );
 					break;
+                case 3:
+					z = c_add( c_mult( z, z ), c );
+                    c = c_add( c_div_n( c, 2.0 ), z );
+					break;
+                case 4:
+                    z = c_add(c_pow(n_div_c(1,z),2), c);
+                    break;
 			}
 
-			if( z.real*z.real > zLimit || z.imag*z.imag > zLimit ){
-				return { i, d }; 
-			}
+            switch(rMode){
+                case 1:
+                    if( z.real*z.real > zLimit || z.imag*z.imag > zLimit ){
+				        return { i, d }; 
+			        }
+                    break;
+                case 2:
+                    if( abs(c_pow_c(z,z).real) > zLimit || abs(c_pow_c(z,z).imag) > zLimit ){
+				        return { i, d }; 
+			        }
+                    break;
+            }
 
 			i++;
 			if(orbitTrap){ 
@@ -309,9 +385,15 @@ i_out_t compute( pixel_t pixel )
 	return { -1, d };
 }
 
+rgba_t getPixel( int x, int y, unsigned char* imageData, int w, int h, int c ){
+	int indexP = c*((x%w) + ((y%h)*h));
+	return { imageData[indexP], imageData[indexP+1], imageData[indexP+2] };
+}
+
 void draw_image( char name[] )
 {
-
+	
+	
 	start = time(NULL);
 	iterator = 0.0;
 	vbv = ((double)(frame.w)*(double)(frame.h));
@@ -331,12 +413,21 @@ void draw_image( char name[] )
 	double logIncrement = (int)(vbv / (double)(logs));
 	double nextLog = logIncrement;
 	double currentLog = 0;
-	for(uint16_t y = 0; y < frame.h; y++){
-		for(uint16_t x = 0; x < frame.w; x++){
+	complex_t tempV;
+    int averageTime = 0;
+    int nextAverage = 0;
+    int completeAverage = 0;
+	for(uint16_t y = 0; y < frame.h; ++y){
+		for(uint16_t x = 0; x < frame.w; ++x){
 			if( (float)(index/3) >= nextLog ){
 				nextLog += logIncrement;
 				currentLog += 1;
-				printf("log %d: %d%%, @%lds\n", (int)( currentLog ), (int)( ((double)(currentLog) / (double)(logs) ) * 100 ), time(NULL)-start );
+                nextAverage = (int)( ( (double)( time(NULL) - start + 0.01) / (double)( currentLog ) ) * (double)(logs) );
+                averageTime = ( nextAverage >= averageTime ) ? nextAverage : averageTime ;
+                completeAverage = (nextAverage+averageTime+( (double)(time(NULL)-start) * ((double)(logs) / (double)( currentLog ) )))/3;
+                         //(int)(((double)(time(NULL)-start + 0.01)/(double)(currentLog))*(double)(logs))
+                printf("| log %d | %d%%, @%lds, | ETA @%lds, in %lds |\n", (int)( currentLog ), (int)( ((double)(currentLog) / (double)(logs) ) * 100 ), time(NULL)-start, completeAverage, completeAverage - (time(NULL)-start) );
+
 			}
 			out = compute( pixel_t { x, y } );
 			if( out.i == -1 ){
@@ -353,24 +444,86 @@ void draw_image( char name[] )
 				switch(fade){
 					case -1:
 						valueChange = lightnessScale * pow((double)(out.i), lightnessExponent);
-						rgba = hsv_to_rgb( ((invert==1) ? 360 - ((v * cMult) + cOffset) : ((v * cMult) + cOffset)) , 1, 1 - scale_to_range(valueChange, range_t { 0, 2500 }, range_t { 0, 1 }, 0.5 ) );
+						rgba = hsv_to_rgb( (v * cMult) + cOffset , 1, 1 - scale_to_range(valueChange, range_t { 0, limit }, range_t { 0, 1 }, 0.5 ) );
 						break;
 					case 0:
-						rgba = hsv_to_rgb( ((invert==1) ? 360 - ((v * cMult) + cOffset) : ((v * cMult) + cOffset)), 1, 1 );
+						rgba = hsv_to_rgb( (v * cMult) + cOffset, 1, 1 );
 						break;
 					case 1:
 						valueChange = lightnessScale * pow((double)(out.i), lightnessExponent);
-						rgba = hsv_to_rgb( ((invert==1) ? 360 - ((v * cMult) + cOffset) : ((v * cMult) + cOffset)) , 1, scale_to_range(valueChange, range_t { 0, 2500 }, range_t { 0, 1 }, 0.5 ) );
+						rgba = hsv_to_rgb( (v * cMult) + cOffset , 1, scale_to_range(valueChange, range_t { 0, limit }, range_t { 0, 1 }, 0.5 ) );
 						break;
 				}
-				
 
-				if(monochrome==1){
+				if(useTexture==1){
+
+					tempV =  complex_t { map_to_range( x, range_t { 0, (double)(frame.w) }, xRange), map_to_range( y, range_t { 0, (double)(frame.h) }, yRange) };
+                    
+                    if(theta!=0){
+                        tempV = c_sub(tempV, position);
+                        tempV = c_add(rotate_theta( tempV, theta ), position);
+                        tempV = c_sub(tempV, texRadialPos);
+                    }
+                    //tempV = c_sub(tempV, rotate_theta(texRadialPos, theta));
+					switch(coordSpace){
+						case 1:
+							tempV =  c_pow(n_div_c( 1.0, tempV ), coordSpaceExp) ;
+							break;
+						case 2:
+							tempV =  n_div_c( 1, c_pow(n_div_c( 1.0, tempV ), coordSpaceExp) ) ;
+							break;
+					}
+
+					switch(coordSpaceC){
+						case 1:
+							tempV =  c_pow_c(n_div_c( 1.0, tempV ), coordSpaceExpC) ;
+							break;
+						case 2:
+							tempV =  n_div_c( 1, c_pow_c(n_div_c( 1.0, tempV ), coordSpaceExpC) ) ;
+							break;
+					}
+
+					//cColor = getPixel( (int)(map_to_range( atan(tempV.imag / abs(tempV.real)) , range_t { -2 * CONST_PI, 2*CONST_PI }, range_t { 0, tW } )), (int)(map_to_range( out.i, range_t { -2, modulus(tempV) }, range_t { 0.0, 5 } )), tImage, tW, tH, tC );
+					if(orbitTrap){
+                        cColor = getPixel(  texOffset.w + (int)(map_to_range( (int)((atan2(tempV.imag,tempV.real) * (180/CONST_PI) + 180 + texRot) * texScale.a ) % 360 , range_t { 0, 360 }, range_t { 0, tW } )),  texOffset.h + (int)(scale_to_range( (int)(out.i * texScale.b * out.d) % limit , range_t { -1, limit }, range_t { 0.0, tH*cMult }, exponent )), tImage, tW, tH, tC );
+                    } else {
+                        cColor = getPixel(  texOffset.w + (int)(map_to_range( (int)((atan2(tempV.imag,tempV.real) * (180/CONST_PI) + 180 + texRot) * texScale.a ) % 360 , range_t { 0, 360 }, range_t { 0, tW } )),  texOffset.h + (int)(scale_to_range( (int)(out.i * texScale.b) % limit , range_t { -1, limit }, range_t { 0.0, tH*cMult }, exponent )), tImage, tW, tH, tC );
+                    }
+
+                    switch(fade){
+					    case -1:
+						    valueChange = lightnessScale * pow((double)(out.i), lightnessExponent);
+						    cColor = revalue( cColor, 1, 1 - scale_to_range(valueChange, range_t { 0, limit }, range_t { 0, 1 }, 0.5 ));
+						    break;
+					    case 0:
+						    break;
+					    case 1:
+						    valueChange = lightnessScale * pow((double)(out.i), lightnessExponent);
+                            cColor = revalue( cColor, 1, scale_to_range(valueChange, range_t { 0, limit }, range_t { 0, 1 }, 0.5 ) );
+						    break;
+				    }
+
+                    if(monochrome==1){
+					    tempSv = (cColor.r + cColor.g + cColor.b)/3;
+                        if(invert==1){ tempSv = 255 - tempSv; }
+					    pixels[index++] = tempSv;
+   					    pixels[index++] = tempSv;
+   					    pixels[index++] = tempSv;
+				    } else {
+                        if(invert==1){ cColor = { 255 - cColor.r,  255 - cColor.g,  255 - cColor.b }; }
+					    pixels[index++] = cColor.r;
+   					    pixels[index++] = cColor.g;
+   					    pixels[index++] = cColor.b;
+				    }
+
+				} else if(monochrome==1){
 					tempSv = (abs(rgba.r + presub)+abs(rgba.g + presub)+abs(rgba.b + presub))/3;
+                    if(invert==1){ tempSv = 255 - tempSv; }
 					pixels[index++] = tempSv;
    					pixels[index++] = tempSv;
    					pixels[index++] = tempSv;
 				} else {
+                    if(invert==1){ rgba = { 255 - rgba.r,  255 - rgba.g,  255 - rgba.b }; }
 					pixels[index++] = abs(rgba.r + presub);
    					pixels[index++] = abs(rgba.g + presub);
    					pixels[index++] = abs(rgba.b + presub);
@@ -406,7 +559,7 @@ const static struct{
 	{"-cExp", 5},
 	{"-res", 6},
 	{"-ratio", 7},
-	{"-isJulia", 8},
+	{"--isJulia", 8},
 	{"-jPos", 9},
 	{"-orbitTrap", 10},
 	{"-zMax", 11},
@@ -414,18 +567,27 @@ const static struct{
 	{"-cOffset", 13},
 	{"-cScale", 14},
 	{"-name", 15},
-	{"-bw", 16},
+	{"--bw", 16},
 	{"-lScale", 17},
 	{"-lExp", 18},
-	{"-fadeDark", 19},
+	{"--fadeDark", 19},
 	{"-fade", 20},
-	{"-inverted", 21},
-	{"-exclude", 22},
-	{"-cSpace", 23}
+	{"--inverted", 21},
+	{"--exclude", 22},
+	{"-cSpace", 23},
+	{"-cSpaceComplex", 24},
+    {"--useTexture", 25},
+    {"-tScale", 26},
+    {"-tOffset", 27},
+    {"-tRot", 28},
+    {"-tPos", 29},
+    {"-rot", 30},
+    {"-rMode", 31},
+    {"-tName", 32}
 };
 
 int get_key( const char *key ){
-	for( int i = 0; i < 23; ++i ){
+	for( int i = 0; i < 32; ++i ){
 		if( !strcmp(key, check_key[i].key) )
 			return check_key[i].v;    
 	}
@@ -440,11 +602,12 @@ const static struct{
 	{"4k", 2},
 	{"8k", 3},
 	{"16k", 4},
-	{"l", 5}
+	{"l", 5},
+    {"p", 6}
 };
 
 int get_res_key( const char *key ){
-	for( int i = 0; i < 5; ++i ){
+	for( int i = 0; i < 6; ++i ){
 		if( !strcmp(key, check_res_key[i].key) )
 			return check_res_key[i].v;    
 	}
@@ -453,8 +616,12 @@ int get_res_key( const char *key ){
 
 int main(int argc, char *argv[])
 {	
+	tImage = stbi_load("useThis.jpg", &tW, &tH, &tC, STBI_rgb);
+	cColor = getPixel( 0, 0, tImage, tW, tH, tC );
+	printf( "%d, %d, %d\n", tW, tH, tC );
 	printf("\n");
 	n = "generatedFractal.png";
+    tN = "useThis.jpg";
 	mode = 0;
 	position = { -0.75, 0 };
 	zoom = 0.7;
@@ -481,7 +648,14 @@ int main(int argc, char *argv[])
 	orbitTrapPos = { 0, 0 };
 	exclude = 1;
 	coordSpace = 0;
-	coordSpaceExp = 1;
+	coordSpaceExp = 1.0;
+	coordSpaceExpC = {1.0, 0};
+    useTexture = 0;
+    texRadialPos = {0, 0};
+    setTexPos = 1;
+    texScale = {1, 1};
+    theta = 0;
+    rMode = 1;
 	for(int i = 0; i < argc; ++i){
 		switch( get_key( argv[i] ) ) {
 			case 1:
@@ -518,6 +692,9 @@ int main(int argc, char *argv[])
 						break;
 					case 5:
 						largest = 1;
+						break;
+                    case 6:
+						resolution = ( 480.0 / 60.0 ) / ratio.a;
 						break;
 				}
 				break;
@@ -579,8 +756,42 @@ int main(int argc, char *argv[])
 				coordSpace = atoi(argv[i+1]);
 				coordSpaceExp = strtod(argv[i+2], NULL);
 				break;
+			case 24:
+				coordSpaceC = atoi(argv[i+1]);
+				coordSpaceExpC = {strtod(argv[i+2], NULL), strtod(argv[i+3], NULL)};
+				break;
+            case 25:
+                useTexture = 1;
+                break;
+            case 26:
+                texScale = {strtod(argv[i+1], NULL), strtod(argv[i+2], NULL)};
+                break;
+            case 27:
+                texOffset = {atoi(argv[i+1]), atoi(argv[i+2])};
+                break;
+            case 28:
+                texRot = strtod(argv[i+1], NULL);
+                break;
+            case 29:
+                setTexPos = 1;
+                texRadialPos = {strtod(argv[i+1], NULL), strtod(argv[i+2], NULL)};
+                break;
+            case 30:
+                theta = strtod(argv[i+1], NULL);
+                break;
+            case 31:
+                rMode = atoi(argv[i+1]);
+                break;
+            case 32:
+                tN = argv[i+1];
+                break;
 		}
 	}
+
+    if(setTexPos==0){
+        texRadialPos = position;
+    }
+
 	if( fade!=0 && fadeDark==1 ){ presub = 0; }
 	if(largest==1){
 		resolution = sqrt( ((INT_MAX/(3 * 60 * 60)) / ratio.a) / ratio.b ) ;
@@ -591,8 +802,9 @@ int main(int argc, char *argv[])
 		printf("!!SPECIFIED RESOLUTION TOO  LARGE!!\n    EXITING PROGRAM BECAUSE THE\n!!IMAGE WOULDN'T SAVE EVEN IF RAN!!\n\n");
 		exit(0);
 	}
+
 	printf("Starting [%dpx, %dpx] (%.5g:%.5g)\n", frame.w, frame.h, ratio.a, ratio.b);
 	draw_image( n );
-
+	
 	return 0;
 }
