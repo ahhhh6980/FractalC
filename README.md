@@ -139,7 +139,8 @@
 - **$** `./FractalC --useTexture -pos 0 0 --isJulia -cSpace 1 2 -orbitTrap 4 1.5 0 -cScale 5 -cExp 0.1 -zMax 1e300 -jPos 0.2 0.65 -cSpaceComplex 2 0 1 -tOffset 960 0 -rot 45 -ratio 16 9 -lExp 2.5 -lScale 0.2 -zoom 1.4 -fade out -lim 10000 -res s `
 - **>** `start FractalC.exe  --useTexture -pos 0 0 --isJulia -cSpace 1 2 -orbitTrap 4 1.5 0 -cScale 5 -cExp 0.1 -zMax 1e300 -jPos 0.2 0.65 -cSpaceComplex 2 0 1 -tOffset 960 0 -rot 45 -ratio 16 9 -lExp 2.5 -lScale 0.2 -zoom 1.4 -fade out -lim 10000 -res s `
 
-![Example of use with new features](https://doggo.ninja/Vjay0v.png)
+![Example of use with new features](https://doggo.ninja/0UdqKE.png)
+
 # License
 ```
 MIT License
