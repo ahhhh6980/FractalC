@@ -5,6 +5,7 @@
 ![example](https://i.imgur.com/xeWEB2n.png)
 ![logo](https://i.imgur.com/LbFowGf.png)
 ## Now with advanced coloring!
+
 ![Large Image](https://doggo.ninja/Lh9yae.png)
 
 ## Setup;
@@ -139,7 +140,8 @@
 - **$** `./FractalC --useTexture -pos 0 0 --isJulia -cSpace 1 2 -orbitTrap 4 1.5 0 -cScale 5 -cExp 0.1 -zMax 1e300 -jPos 0.2 0.65 -cSpaceComplex 2 0 1 -tOffset 960 0 -rot 45 -ratio 16 9 -lExp 2.5 -lScale 0.2 -zoom 1.4 -fade out -lim 10000 -res s `
 - **>** `start FractalC.exe  --useTexture -pos 0 0 --isJulia -cSpace 1 2 -orbitTrap 4 1.5 0 -cScale 5 -cExp 0.1 -zMax 1e300 -jPos 0.2 0.65 -cSpaceComplex 2 0 1 -tOffset 960 0 -rot 45 -ratio 16 9 -lExp 2.5 -lScale 0.2 -zoom 1.4 -fade out -lim 10000 -res s `
 
-![Example of use with new features](https://doggo.ninja/Vjay0v.png)
+![Example of use with new features](https://doggo.ninja/0UdqKE.png)
+
 # License
 ```
 MIT License
@@ -166,4 +168,13 @@ SOFTWARE.
 ```
 
 
+# Prerelease v0.6b-0 Info
+## ***The new update introduces multithreading as well as many improvements to the code itself. It is unfinished.***
+
+### *One new flag in this version is* `-mt`
+
+#### this flag allows the specification of threads
+
+##### the new version also includes several new fractal modes
+##### A goal for v0.6 is to implement a fix to the image size limit, and to implement formula specification
 
