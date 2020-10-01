@@ -177,4 +177,4 @@ SOFTWARE.
 
 ##### the new version also includes several new fractal modes
 ##### A goal for v0.6 is to implement a fix to the image size limit, and to implement formula specification
-
+`To compile this version: ` **$**`g++ -o FractalC FractalCMain.cpp -lm -fno-threadsafe-statics -O2 -lstdc++ -pthread`
