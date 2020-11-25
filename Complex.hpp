@@ -49,25 +49,35 @@ class Complex
             return Complex<T>{ i, j }.power( T{1} / r );
         }
 
-        Complex<T> power ( T r )
+        Complex<T> power ( T p )
         {
-            return root(T{1}/r);
+
+            int n = (int)(p);
+            Complex<T> current = {this->real(), this->imag()};
+
+            if( n == 1 ){ return current; }
+	        Complex<T> temp = current.power( n/2 );
+	        if( n % 2 == 0 ){ return temp * temp; }
+	        else{ return ( current * ( temp * temp ) );}
+
         }
 
         Complex<T> power ( Complex<T> z )
         {
+
         	if ( i == T{0} && j == T{0} )
         		return Complex<T> { T{0}, T{0} };
         	if ( z.real() == T{0} && z.imag() == T{0} )
         		return Complex<T> { T{1}, T{0} }; 
         
-        	double temp1 = mod();
-        	double temp2 = z.real() * atan2(j,i) + ( (z.imag() / 2) * log( temp1 ) );
+        	T temp1 = i*i + j*j;
+        	T temp2 = z.real() * atan2(j,i) + ( (z.imag() / 2) * log( temp1 ) );
         
-        	double va = pow( temp1, z.real() / 2 );
-        	double vb = exp( -z.imag() * atan2(j,i) );
+        	T va = pow( temp1, z.real() / 2.0 );
+        	T vb = exp( -(z.imag()) * atan2(j,i) );
         
-        	return Complex<T> { cos(temp2), sin(temp2) } * (va*vb);          
+        	return (Complex<T> { cos(temp2), sin(temp2) } * (va*vb));   
+
         }
 
         Complex<T> lg ( void ){
@@ -275,7 +285,7 @@ template <typename T>
 inline Complex<T> operator / ( Complex<T> a, Complex<T> b )
 {
     Complex<T> temp = b.conjugate() * a;
-    return { temp.real() / b.mod(), temp.imag() / b.mod() };
+    return Complex<T> { temp.real() / b.mod(), temp.imag() / b.mod() };
 }
 
 template <typename T>

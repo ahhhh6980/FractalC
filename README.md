@@ -1,9 +1,6 @@
-
-
-# FractalC  v0.5b-1
+# FractalC  v0.6b-1
 ## Terminal Activated Mandelbrot & Julia Fractal Generator in C/C++
-![example](https://i.imgur.com/xeWEB2n.png)
-![logo](https://i.imgur.com/LbFowGf.png)
+![logo](https://ninja.dog/TGIKJg.png)
 ## Now with advanced coloring!
 
 ![Large Image](https://doggo.ninja/Lh9yae.png)
@@ -11,19 +8,16 @@
 ## Setup;
 
 ### ---Compile From Source---
-***Linux***: **$** `gcc -o FractalCv0.5b-1 FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
-- Requires GCC (any C++ compiler will do though), but it should already be installed
-
-***Windows x86-x64***: **>** `i686-w64-mingw32-gcc -o FractalCv0.5b-1.exe FractalCMain.C -lm -fno-threadsafe-statics -O2 -lstdc++`
-- Requires MinGW
+***Linux and Windows***: **$** `g++ -o FractalCv0.6b_1 FractalCMain.cpp -lm -fno-threadsafe-statics -O2 -lstdc++ -pthread`
+- Requires G++ (any C++ compiler will do though), but it should already be installed
 
 ### ---Running the binaries---
-***Linux***: **$** `./FractalCv0.5b-1 [ARGUMENTS]`
+***Linux***: **$** `./FractalCv0.6b_1 [ARGUMENTS]`
 
-***Windows***: **>** `start FractalCv0.5b-1.exe [ARGUMENTS]`
+***Windows***: **>** `start FractalCv0.6b_1.exe [ARGUMENTS]`
 # Input flags;
 ### You can input these in any order you want as long as they all appear no more than once in your input
-## There are 32 possible flags
+## There are 35 possible flags
 -**Flags starting with two dashes have no parameters**
 * **-mode &nbsp; [mode (int)]**
 	- `Mode of 0 = Mandelbrot`
@@ -35,6 +29,11 @@
 	
 * **-pos &nbsp; [posX (double)] &nbsp; [posY (double)]**
 	 - `Complex Coordinate the image is centered on; two numbers`
+	 
+* **-zInit &nbsp; [z_0 X (int)] &nbsp; [z_0 Y (int)]**
+    - `Allows you to override what z is initialized to`
+    - `Can drastically change what the fractal ends up looking like`
+    - `Does not work on Julia Fractals`
 
 * **-rot  &nbsp; [angle (double)]**
     - `Specifies Rotation of the entire fractal in degrees`
@@ -135,12 +134,19 @@
     - `Specifies render mode`
     - `Mode 1 = basic`
     - `Mode 2 = tree mode (long compute times)`
+* **-mt &nbsp; [threads (int)]**
+    - `Specifies a number of threads to use for rendering`
+* **-split &nbsp; [segmentation width (int)]**
+    - `specifies how many images wide and tall to split up the rendering into`
+    - `it will output n^2 images, where n is the number`
+    - `the output images will be the resolution you specified in the input`
+    - `this allows you to generate massive images and yet use small tiles to store them`
 
 **Example Of An Input;**
-- **$** `./FractalC --useTexture -pos 0 0 --isJulia -cSpace 1 2 -orbitTrap 4 1.5 0 -cScale 5 -cExp 0.1 -zMax 1e300 -jPos 0.2 0.65 -cSpaceComplex 2 0 1 -tOffset 960 0 -rot 45 -ratio 16 9 -lExp 2.5 -lScale 0.2 -zoom 1.4 -fade out -lim 10000 -res s `
-- **>** `start FractalC.exe  --useTexture -pos 0 0 --isJulia -cSpace 1 2 -orbitTrap 4 1.5 0 -cScale 5 -cExp 0.1 -zMax 1e300 -jPos 0.2 0.65 -cSpaceComplex 2 0 1 -tOffset 960 0 -rot 45 -ratio 16 9 -lExp 2.5 -lScale 0.2 -zoom 1.4 -fade out -lim 10000 -res s `
+- **$** `./FractalCv0.6b_1 -mode 2 -zMax 1e5 -fade in -cScale 2 -cExp 1 -cOffset 2 -zInit 0 122 -cSpace 1 2 -ratio 16 9 -pos 0.725 0.13 -zoom 3 -res s`
+- **>** `start FractalCv0.6b_1.exe -mode 2 -zMax 1e5 -fade in -cScale 2 -cExp 1 -cOffset 2 -zInit 0 122 -cSpace 1 2 -ratio 16 9 -pos 0.725 0.13 -zoom 3 -res s`
 
-![Example of use with new features](https://doggo.ninja/0UdqKE.png)
+![Example of use with new features](https://ninja.dog/EnTRId.png)
 
 # License
 ```
@@ -166,15 +172,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
-
-# Prerelease v0.6b-0 Info
-## ***The new update introduces multithreading as well as many improvements to the code itself. It is unfinished.***
-
-### *One new flag in this version is* `-mt`
-
-#### this flag allows the specification of threads
-
-##### the new version also includes several new fractal modes
-##### A goal for v0.6 is to implement a fix to the image size limit, and to implement formula specification
-`To compile this version: ` **$**`g++ -o FractalC FractalCMain.cpp -lm -fno-threadsafe-statics -O2 -lstdc++ -pthread`

@@ -1,3 +1,5 @@
+// Author; ahhhh#6980
+
 #include <iostream>
 #include <cmath>
 #include <complex>
@@ -11,12 +13,9 @@ class Range {
         // helper function
         inline T logb( T b, T x )
         {
-	        if( x == T{ 0 } || b == T{ 0 } )
-            { 
+	        if( x == T{ 0 } || b == T{ 0 } ) { 
                 return T{ 0 }; 
-            } 
-            else 
-            { 
+            } else { 
                 return log(x) / log(b); 
             }
         }
@@ -164,6 +163,18 @@ inline Range<T> operator + ( Range<T>& a, Range<T>& b )
 }
 
 template <typename T>
+inline Range<T> operator + ( Range<T> a, T b )
+{
+    return Range<T> { a.A() + b, a.B() + b };
+}
+
+template <typename T>
+inline Range<T> operator - ( Range<T> a, T b )
+{
+    return Range<T> { a.A() - b, a.B() - b };
+}
+
+template <typename T>
 inline Range<T> operator - ( Range<T>& a, Range<T>& b )
 {
     return Range<T> { a.A() - b.A(), a.B() - b.B() };
@@ -176,4 +187,3 @@ std::ostream& operator << ( std::ostream& out, Range<T>& rhs )
     out << "RANGE:[" << rhs.A() << ", " << rhs.B() << "]";
 	return out;
 }
-
