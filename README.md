@@ -1,9 +1,6 @@
 # FractalC  v0.6b-1
 ## Terminal Activated Mandelbrot & Julia Fractal Generator in C/C++
 ![logo](https://ninja.dog/TGIKJg.png)
-## Now with advanced coloring!
-
-![Large Image](https://doggo.ninja/Lh9yae.png)
 
 ## Setup;
 
