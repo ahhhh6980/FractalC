@@ -9,6 +9,7 @@
 - Requires G++ (any C++ compiler will do though), but it should already be installed
 
 ### ---Running the binaries---
+Extract the proper zip from https://github.com/ahhhh6980/FractalC/releases/tag/v0.6b-1 to a folder
 ***Linux***: **$** `./FractalCv0.6b_1 [ARGUMENTS]`
 
 ***Windows***: **>** `start FractalCv0.6b_1.exe [ARGUMENTS]`
