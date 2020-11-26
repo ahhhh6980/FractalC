@@ -506,7 +506,59 @@ void draw_image( pp_t input )
                     out.d = out.d / 9.0;
 
                     break;
+                case 4:
+                    out = compute( c );
 
+                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real(),c.imag() + sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real(),c.imag() - sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag() - sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag() + sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag() + sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag() - sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() - abs(sscD.real() * cos(45)),c.imag() - abs(sscD.imag() * sin(45))} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() + abs(sscD.real() * cos(45)),c.imag() + abs(sscD.imag() * sin(45))} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() - abs(sscD.real() * cos(45)),c.imag() + abs(sscD.imag() * sin(45))} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() + abs(sscD.real() * cos(45)),c.imag() - abs(sscD.imag() * sin(45))} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    out.i = out.i / 13;
+                    out.d = out.d / 13.0;
             }
 			
 			if( out.i == -1 ){
@@ -929,18 +981,25 @@ int main(int argc, char *argv[])
     }
 
 	if( fade!=0 && fadeDark==1 ){ presub = 0; }
-	if(largest==1){
-		resolution = sqrt( ((INT_MAX/(3 * 60 * 60)) / ratio.A()) / ratio.B() ) ;
-	}
 
 	frame = get_frame( ratio, resolution );
 
+    if(largest==1){
+		frame = { (int)((ratio.A()*sqrt((double)(INT_MAX)))/(ratio.A()+ratio.B())), 
+                  (int)((ratio.B()*sqrt((double)(INT_MAX)))/(ratio.A()+ratio.B())) };
+	}
+
 	if( frame.w+frame.h > sqrt(INT_MAX) ){
+        std::cout << " Frame W: " << frame.w << " | " << " Frame H: " << frame.h << std::endl;
+        std::cout << " resolution: " << resolution << " | " << " factor: " << factor << std::endl;
         int factorAdd = ceil( (double)(frame.w+frame.h) / sqrt((double)(INT_MAX)) );
         resolution /= factorAdd;
         factor *= factorAdd;
+        frame = get_frame( ratio, resolution );
+        std::cout << " Frame W: " << frame.w << " | " << " Frame H: " << frame.h << std::endl;
+        std::cout << " FactorAdd: " << factorAdd << " | " << " resolution: " << resolution << " | " << " factor: " << factor << std::endl;
 	}
-
+    time_t programStart = time(NULL);  
     for (int seg = 0; seg < (factor*factor) ; ++seg ){
 
         segCount += 1;
@@ -1025,9 +1084,14 @@ int main(int argc, char *argv[])
 	    free(pixArray);
     
         //th2.join();
-	    printf("\nPixel Array is now free from memory\nIt is now safe to close the program\n\n");
+        if(factor>1){
+	        printf("\nPixel Array is now free from memory\nIt is now safe to close the program\n\n");
+        }
     }
-
+    if(factor>1){
+        printf("\nFinished and saved @%lds\n", time(NULL) - programStart );
+        printf("\nPixel Arrays are free from memory\nIt is safe to close the program\n\n");
+    }
     std::stringstream commandOutput;
 
     for( int i = 0; i < argc; ++i ){
