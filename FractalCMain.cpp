@@ -14,7 +14,6 @@
 #include <future>
 #include <vector>
 #include <sstream>
-#include <windows.h>
 
 // Libraries needed to be able to create image output
 #define STB_IMAGE_IMPLEMENTATION
@@ -933,11 +932,13 @@ int main(int argc, char *argv[])
 	if(largest==1){
 		resolution = sqrt( ((INT_MAX/(3 * 60 * 60)) / ratio.A()) / ratio.B() ) ;
 	}
-	
+
 	frame = get_frame( ratio, resolution );
-	if( resolution > sqrt( ((INT_MAX/(3 * 60 * 60)) / ratio.A()) / ratio.B() )  ){
-		printf("!!SPECIFIED RESOLUTION TOO  LARGE!!\n    EXITING PROGRAM BECAUSE THE\n!!IMAGE WOULDN'T SAVE EVEN IF RAN!!\n\n");
-		exit(0);
+
+	if( frame.w+frame.h > sqrt(INT_MAX) ){
+        int factorAdd = ceil( (double)(frame.w+frame.h) / sqrt((double)(INT_MAX)) );
+        resolution /= factorAdd;
+        factor *= factorAdd;
 	}
 
     for (int seg = 0; seg < (factor*factor) ; ++seg ){
