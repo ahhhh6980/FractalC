@@ -14,6 +14,7 @@
 #include <future>
 #include <vector>
 #include <sstream>
+#include <windows.h>
 
 // Libraries needed to be able to create image output
 #define STB_IMAGE_IMPLEMENTATION
@@ -166,6 +167,10 @@ double cMult;
 // Stores filename
 char* n;
 
+// Supersampling specification
+int supersampling;
+double ssDV;
+
 int fadeDark;
 int fade;
 // Scalar for the fade
@@ -217,17 +222,13 @@ int s;
 pp_t inp;
 
 // Compute pixel
-i_out_t compute( pixel_t pixel )
+i_out_t compute( Complex<double> c )
 {   
     double p = 2.0;
     // Closest Distance Variable
 	float d = 1e20;
     // Iterator
 	uint16_t i = 0;
-	
-    // The pixel mapped to its approximate position on the complex plane
-	Complex<double> c = { Range<double>{ frame.w }.mapLin( pixel.x, xRange ), 
-                          Range<double>{ frame.h }.mapLin( pixel.y, yRange ) };
     
     // Rotate the coordinate by defined theta
     if(theta!=0){
@@ -262,7 +263,6 @@ i_out_t compute( pixel_t pixel )
     } else {
         z = c;
     }
-	
 
     // Change the addition coordinate to a static coord for a Julia
 	if(isJulia==1) c = jCoord;
@@ -397,7 +397,8 @@ void draw_image( pp_t input )
 	rgba_t rgba = {0,0,0,0};
     // Used to store pixel computation results as they are used multiple times
 	i_out_t out = {0,0};
-    
+    i_out_t tempCalc = {0,0.0};
+
     // Position iterator
 	uint64_t index = frame.w*range.A()*3;
 
@@ -409,10 +410,106 @@ void draw_image( pp_t input )
     // Wow another temporary variable
 	Complex<double> tempV;
 
+    double dvx = Range<double>{frame.w}.mapLin( 2, xRange ) - Range<double>{frame.w}.mapLin( 1, xRange );
+    double dvy = Range<double>{frame.h}.mapLin( 2, yRange ) - Range<double>{frame.h}.mapLin( 1, yRange );
+
+    Complex<double> sscD = {abs(dvx/ssDV), abs(dvy/ssDV)};
+
 	for(uint16_t y = range.A(); y < range.B(); ++y){
 		for(uint16_t x = 0; x < frame.w; ++x){
 
-			out = compute( pixel_t { x, y } );
+             // The pixel mapped to its approximate position on the complex plane
+	        Complex<double> c = { Range<double>{ frame.w }.mapLin( x, xRange ), 
+                                  Range<double>{ frame.h }.mapLin( y, yRange ) };
+
+            switch(supersampling){
+                case 0:
+                    out = compute( c );
+                    break;
+                case 1:
+
+                    out = compute( c );
+
+                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    out.i = out.i / 3;
+                    out.d = out.d / 3.0;
+                    break;
+                    
+                case 2:
+
+                    out = compute( c );
+
+                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real(),c.imag() + sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real(),c.imag() - sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    out.i = out.i / 5;
+                    out.d = out.d / 5.0;
+
+                    break;
+
+                case 3:
+
+                    out = compute( c );
+
+                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real(),c.imag() + sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real(),c.imag() - sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag() - sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag() + sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag() + sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag() - sscD.imag()} );
+                    out.i = out.i + tempCalc.i;
+                    out.d = out.d + tempCalc.d;
+
+                    out.i = out.i / 9;
+                    out.d = out.d / 9.0;
+
+                    break;
+
+            }
+			
 			if( out.i == -1 ){
                 // set to black
 				pixels[index++] = 0;
@@ -445,11 +542,8 @@ void draw_image( pp_t input )
                 // Conditionals for texture usage
 				if(useTexture==1){
                     
-                    // get complex coordinates of pixel
-                    // I could prob have changed it to use
-                    // that much earlier idk
-					tempV ={Range<double>{frame.w}.mapLin( x, xRange ), 
-                            Range<double>{frame.h}.mapLin( y, yRange ) };
+                    // Assign temp to complex coordinates of pixel
+					tempV = c;
                     
                     // Adjust texture for screen position and rotation
                     if(theta!=0){
@@ -588,12 +682,14 @@ const static struct{
     {"-tName", 32},
     {"-mt", 33},
     {"-split", 34},
-    {"-zInit", 35}
+    {"-zInit", 35},
+    {"-ss", 36},
+    {"-ssDV", 37}
 };
 
 // Command lookup
 int get_key( const char *key ){
-	for( int i = 0; i < 35; ++i ){
+	for( int i = 0; i < 37; ++i ){
 		if( !strcmp(key, check_key[i].key) )
 			return check_key[i].v;    
 	}
@@ -626,7 +722,7 @@ int main(int argc, char *argv[])
 {	
     // So many right? feel free to give suggestions on how to do this better
 	n = "generatedFractal";
-    tN = "useThis.jpg";
+    tN = "texture";
 	mode = 0;
 	position = { -0.75, 0 };
 	zoom = 0.7;
@@ -664,6 +760,8 @@ int main(int argc, char *argv[])
     s = 3;
     set_zInit = 0;
     zInit = {0,0};
+    supersampling = 0;
+    ssDV = 3.0;
     int factor = 1;
 	for(int i = 0; i < argc; ++i){
 		switch( get_key( argv[i] ) ) {
@@ -812,10 +910,19 @@ int main(int argc, char *argv[])
                 set_zInit = 1;
                 zInit = {strtod(argv[i+1], NULL), strtod(argv[i+2], NULL)};
                 break;
+            case 36:
+                supersampling = atoi(argv[i+1]);
+                break;
+            case 37:
+                ssDV = strtod(argv[i+1], NULL);
+                break;
 		}
 	}
     // Texture
-	tImage = stbi_load("useThis.jpg", &tW, &tH, &tC, STBI_rgb);
+    std::stringstream tName;
+    tName << tN;
+    tName << ".jpg";
+	tImage = stbi_load( (char*) tName.str().c_str(), &tW, &tH, &tC, STBI_rgb);
 	printf( "%d, %d, %d\n", tW, tH, tC );
 	printf("\n");
     if(setTexPos==0){
