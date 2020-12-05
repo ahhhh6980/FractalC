@@ -52,7 +52,7 @@ typedef struct {
 
 // Data passed out of compute(), i is iterations, d is furthest distance
 typedef struct {
-	int i;
+	double i;
 	double d;
 } i_out_t;
 
@@ -67,8 +67,9 @@ typedef struct {
 // Important for passing around data to the threads
 typedef struct {
     Range<uint16_t> r;
-    uint8_t * p;
-    int * neb;
+    uint8_t* p;
+    int scalar;
+    int label;
 } pp_t;
 
 // This is declared outside of convert_hue to prevent it from constantly recreating the value
@@ -76,7 +77,7 @@ Range<double> r1 = {0, 60};
 Range<double> r2 = {0, 255};
 
 // Takes an angle as input and outputs an RGB value, I made this from scratch
-inline uint8_t convert_hue ( int theta )
+uint8_t convert_hue ( int theta )
 {
 	theta %= 360;
 	if ( theta >= 300 || theta <= 60 ) return 255; 
@@ -86,7 +87,7 @@ inline uint8_t convert_hue ( int theta )
 }
 
 // Used to apply a saturation and value modifier to a pure RGB, I made this from scratch
-inline rgba_t revalue( rgba_t color, double s, double v )
+rgba_t revalue( const rgba_t &color, double s, double v  )
 {
     int m = MAX( MAX(color.r, color.g), color.b );
     return rgba_t {
@@ -98,13 +99,13 @@ inline rgba_t revalue( rgba_t color, double s, double v )
 }
 
 // The entire HSV to RGB function, I made this from scratch
-inline rgba_t hsv_to_rgb ( int h, double s, double v )
+rgba_t hsv_to_rgb ( int h, double s, double v )
 {
 	return revalue (rgba_t {convert_hue( h ), convert_hue( h - 120 ), convert_hue( h + 120 ), 255 }, s, v );
 }
 
 // Gets the correct Frame size
-inline bounds_t get_frame( Range<double> ratio, double res )
+bounds_t get_frame( Range<double> ratio, double res )
 {
 	return { (uint64_t)( res * ratio.A() * 60 ), 
              (uint64_t)( res * ratio.B() * 60 )  };
@@ -219,10 +220,33 @@ char* tN;
 // Used for multithreading data?
 int s;
 pp_t inp;
+int useMultiMode = 1;
+
+int tetrationAddC;
+int tetrationLim;
+
+// Very cool black pixel filling method
+int cascadeLimit = -1;
+int cascading = 1;
+int cascadeMethod[2];
+Complex<double> cascadeOffset;
+Complex<double> cascadeScale;
+
+double lBound;
+double uBound;
+int useSmoothenedIterations;
+int specifyBound;
+
+int isBurningShip;
 
 // Compute pixel
-i_out_t compute( Complex<double> c )
+void compute( i_out_t& output, const Complex<double> &cIn, int modePass = mode, Complex<double> zInfluence = zInit )
 {   
+    Complex<double> c = cIn;
+    int currentMode = mode;
+    if(useMultiMode == 1){
+        currentMode = modePass;
+    }
     double p = 2.0;
     // Closest Distance Variable
 	float d = 1e20;
@@ -257,26 +281,49 @@ i_out_t compute( Complex<double> c )
 
     // Our main point of computation
     Complex<double> z;
-    if(set_zInit==1){
-        z = zInit;
+    if(set_zInit==1 && (isJulia==0)){
+        z = zInit+zInfluence;
     } else {
         z = c;
     }
 
+    if(isJulia==1){
+        if(cascading == 1) {
+            c = zInfluence + jCoord;
+        } else {
+            c = jCoord;
+        }
+    }
     // Change the addition coordinate to a static coord for a Julia
 	if(isJulia==1) c = jCoord;
 
+	double bVal = 256.0;
+
     // Approximates the main cardioid and bulb of the mandelbrot set
     //p = 0.0
-	if( mode == 0 ) p = sqrt( (c.real() - 0.25)*(c.real() - 0.25) + c.imag()*c.imag() );
-	if( (exclude==0) || (mode!=0) || ((c.real() > p - 2*p*p + 0.25) && ((c.real()+1)*(c.real()+1) + c.imag()*c.imag()  > 0.0625)  )){
+	if( currentMode == 0 ) p = sqrt( (c.real() - 0.25)*(c.real() - 0.25) + c.imag()*c.imag() );
+	if( (exclude==0) || (currentMode!=0) || ((c.real() > p - 2*p*p + 0.25) && ((c.real()+1)*(c.real()+1) + c.imag()*c.imag()  > 0.0625)  )){
 		while(i < limit){
 
             // Switch case for fractal type
-			switch(mode){
+            if(isBurningShip==1){
+				z = z.absC();
+			}
+
+			switch(currentMode){
+                case -2:
+                    // Tetration
+                    for ( int tet = 0; tet < tetrationLim; ++tet ){
+                        z = z.power(z);
+                    }
+                    if( tetrationAddC == 1 ){
+                        z += c;
+                    }
+					break;
 				case -1:
                     // Debugging
-					return { -1, d };
+                    output = { -1, d };
+                    return;
 				case 0:
                     // Mandelbrot
 					z = z*z + c;
@@ -323,6 +370,15 @@ i_out_t compute( Complex<double> c )
                     // Another Very Bizarre Fractal
                     z = z.power(z.root(c) + c.root(z)) + c;
                     break;
+				case 11:
+					z = z.power(3.0) + z.power(2.0) + c;
+					break;
+				case 12:
+					z = z.power(16.0) + z.power(8.0) + z.power(4.0) + z.power(2.0) + c;
+					break;
+				case 13:
+					z = z.power(2.0) + (z.power(4.0) / c.power(4.0)) + c;
+					break;
 
 			}
 
@@ -330,14 +386,35 @@ i_out_t compute( Complex<double> c )
             switch(rMode){
                 case 1:
                     if( z.real()*z.real() > zLimit || z.imag()*z.imag() > zLimit ){
-				        return { i, d }; 
+						if(useSmoothenedIterations==1){
+							output = { i - log(log(sqrt((z.real()*z.real())+(z.imag()*z.imag())))/log(bVal))/log(2.0), d };
+						} else {
+							output = { i, d };
+						}
+                        return;
 			        }
                     break;
                 case 2:
                     if( abs( z.power(z).real() ) > zLimit || abs( z.power(z).imag() ) > zLimit ){
-				        return { i, d }; 
+						if(useSmoothenedIterations==1){
+							output = { i - log(log(sqrt((z.real()*z.real())+(z.imag()*z.imag())))/log(bVal))/log(2.0), d };
+						} else {
+							output = { i, d };
+						}
+                        return;
 			        }
                     break;
+				case 3:
+					if(z.dot(z) > bVal*bVal){
+						if(useSmoothenedIterations==1){
+							output = { i - log(log(sqrt((z.real()*z.real())+(z.imag()*z.imag())))/log(bVal))/log(2.0), d };
+						} else {
+							output = { i, d };
+						}
+						return;
+					}
+					break;
+
             }
 
 			// Orbit Trap computation
@@ -362,8 +439,12 @@ i_out_t compute( Complex<double> c )
 			}
             ++i;
 		}
-	} else { return { -1, d }; }
-	return { -1, d };
+	} else { 
+        output = { -1, d }; 
+        return;
+    }
+	output = { -1, d };
+    return;
 }
 
 // Keeps track of how many segments have been computed
@@ -386,6 +467,9 @@ void draw_image( pp_t input )
     Range<double> range1 = {0.0, (double)(limit)};
     Range<double> range2 = {0.0, 360};
     
+    int splitS = input.scalar;
+
+
     // temporary fungible color value
     rgba_t cColor;
     // The vertical scope assigned to this function call
@@ -412,7 +496,17 @@ void draw_image( pp_t input )
     double dvx = Range<double>{frame.w}.mapLin( 2, xRange ) - Range<double>{frame.w}.mapLin( 1, xRange );
     double dvy = Range<double>{frame.h}.mapLin( 2, yRange ) - Range<double>{frame.h}.mapLin( 1, yRange );
 
-    Complex<double> sscD = {abs(dvx/ssDV), abs(dvy/ssDV)};
+    Complex<double> sscD = {abs(dvx/ssDV)*(((double)(frame.w) / 480.0))*splitS, abs(dvy/ssDV)*(((double)(frame.h) / 420.0))*splitS};
+    double divvy;
+    
+    //Complex<double> zInfluence = {0.0,0.0};
+
+    //std::vector<i_out_t> computeList;
+    //int modeList[2] = {1,1};
+    double cascIter;
+    double cascSet[2] = {0.0,0.0};
+
+    
 
 	for(uint16_t y = range.A(); y < range.B(); ++y){
 		for(uint16_t x = 0; x < frame.w; ++x){
@@ -421,146 +515,258 @@ void draw_image( pp_t input )
 	        Complex<double> c = { Range<double>{ frame.w }.mapLin( x, xRange ), 
                                   Range<double>{ frame.h }.mapLin( y, yRange ) };
 
-            switch(supersampling){
-                case 0:
-                    out = compute( c );
-                    break;
-                case 1:
+            std::vector<Complex<double>> csamples1 = {
+                Complex<double>{c.real() + sscD.real(),c.imag()}, 
+                Complex<double>{c.real() - sscD.real(),c.imag()}
+                };
 
-                    out = compute( c );
+            std::vector<Complex<double>> csamples2 = {
+                Complex<double>{c.real() + sscD.real(),c.imag()}, 
+                Complex<double>{c.real() - sscD.real(),c.imag()}
+                };
 
-                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
+            std::vector<Complex<double>> csamples3 = {
+                Complex<double>{c.real() + sscD.real(),c.imag()}, 
+                Complex<double>{c.real() - sscD.real(),c.imag()}
+                };
 
-                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
+            divvy = 0;
+            //computeList.clear();
+            for(int o = 0; o < supersampling+1; ++o){
+                switch(o){
+                    case 0:
 
-                    out.i = out.i / 3;
-                    out.d = out.d / 3.0;
-                    break;
-                    
-                case 2:
+                        if(cascading==1 && set_zInit == 1)
+                        {   
+                            compute( out, c, mode );
+                            cascSet[0] = 0.0;
+                            cascSet[1] = 0.0;
+                            cascIter = 0.0;
+                            while( out.i==-1 && ((cascIter < cascadeLimit) || (cascadeLimit == -1)) ) 
+                            {
+                                switch(cascadeMethod[0])
+                                {
+                                    case -1:
+                                        cascSet[0] = (cascadeScale.real()*(-1*cascIter))+cascadeOffset.real();
+                                        break;
+                                    case 0:
+                                        cascSet[0] = 0.0;
+                                        break;
+                                    case 1:
+                                        cascSet[0] = (cascadeScale.real()*cascIter)+cascadeOffset.real();
+                                        break;
+                                }
+                                switch(cascadeMethod[1])
+                                {
+                                    case -1:
+                                        cascSet[1] = (cascadeScale.imag()*(-1*cascIter))+cascadeOffset.imag();
+                                        break;
+                                    case 0:
+                                        cascSet[1] = 0.0;
+                                        break;
+                                    case 1:
+                                        cascSet[1] = (cascadeScale.imag()*cascIter)+cascadeOffset.imag();
+                                        break;
+                                }
 
-                    out = compute( c );
+                                compute( out, c, mode, Complex<double>{cascSet[0],cascSet[1]} );
+                                cascIter+=1.0;
+                            }
+                        }
+                        else 
+                        {
+                            compute( out, c );
+                        }
+                        /*
+                        
+                        }*/
 
-                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        break;
+                    case 1:
+                        for (Complex<double> csample: csamples1 )
+                        {
 
-                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
+                            if(cascading==1 && set_zInit == 1)
+                            {   
+                                compute( tempCalc, csample, mode );
+                                cascSet[0] = 0.0;
+                                cascSet[1] = 0.0;
+                                cascIter = 0.0;
+                                while( out.i==-1 && ((cascIter < cascadeLimit) || (cascadeLimit == -1)) ) 
+                                {
+                                    switch(cascadeMethod[0])
+                                    {
+                                        case -1:
+                                            cascSet[0] = (cascadeScale.real()*(-1*cascIter))+cascadeOffset.real();
+                                            break;
+                                        case 0:
+                                            cascSet[0] = 0.0;
+                                            break;
+                                        case 1:
+                                            cascSet[0] = (cascadeScale.real()*cascIter)+cascadeOffset.real();
+                                            break;
+                                    }
+                                    switch(cascadeMethod[1])
+                                    {
+                                        case -1:
+                                            cascSet[1] = (cascadeScale.imag()*(-1*cascIter))+cascadeOffset.imag();
+                                            break;
+                                        case 0:
+                                            cascSet[1] = 0.0;
+                                            break;
+                                        case 1:
+                                            cascSet[1] = (cascadeScale.imag()*cascIter)+cascadeOffset.imag();
+                                            break;
+                                    }
 
-                    tempCalc = compute( Complex<double>{c.real(),c.imag() + sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
+                                    compute( tempCalc, csample, mode, Complex<double>{cascSet[0],cascSet[1]} );
+                                    cascIter+=1.0;
+                                }
+                            }
+                            else 
+                            {
+                                compute( tempCalc, csample );
+                            }
+                            out.i = out.i + tempCalc.i;
+                            out.d = out.d + tempCalc.d;
+                            ++divvy;
+                        }
+                        break;
+                        
+                    case 2:
+                        /*if(sizeof(modeList)>1){
+                            for (int cli = 0; cli < sizeof(modeList) ; ++cli) {
+                                tempCalc = compute( Complex<double>{c.real(),c.imag() + sscD.imag()}, modeList[cli] );
+                                computeList[cli].i = computeList[cli].i + tempCalc.i;
+                                computeList[cli].d = computeList[cli].d + tempCalc.d;
+                                tempCalc = compute( Complex<double>{c.real(),c.imag() - sscD.imag()}, modeList[cli] );
+                                computeList[cli].i = computeList[cli].i + tempCalc.i;
+                                computeList[cli].d = computeList[cli].d + tempCalc.d;
+                            }
+                            ++divvy;
+                            ++divvy;
+                        } else {
+                            tempCalc = compute( Complex<double>{c.real(),c.imag() + sscD.imag()} );
+                            out.i = out.i + tempCalc.i;
+                            out.d = out.d + tempCalc.d;
+                            ++divvy;
+                            tempCalc = compute( Complex<double>{c.real(),c.imag() - sscD.imag()} );
+                            out.i = out.i + tempCalc.i;
+                            out.d = out.d + tempCalc.d;
+                            ++divvy;
+                        }*/
+                        compute( tempCalc, Complex<double>{c.real(),c.imag() + sscD.imag()} );
+                        out.i = out.i + tempCalc.i;
+                        out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        compute( tempCalc, Complex<double>{c.real(),c.imag() - sscD.imag()} );
+                        out.i = out.i + tempCalc.i;
+                        out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        break;
 
-                    tempCalc = compute( Complex<double>{c.real(),c.imag() - sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
+                    case 3:
 
-                    out.i = out.i / 5;
-                    out.d = out.d / 5.0;
+                        /*for (int cli = 0; cli < sizeof(modeList) ; ++cli) {
+                            tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag() - sscD.imag()}, modeList[cli] );
+                            computeList[cli].i = computeList[cli].i + tempCalc.i;
+                            computeList[cli].d = computeList[cli].d + tempCalc.d;
+                            tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag() + sscD.imag()}, modeList[cli] );
+                            computeList[cli].i = computeList[cli].i + tempCalc.i;
+                            computeList[cli].d = computeList[cli].d + tempCalc.d;
+                            tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag() + sscD.imag()}, modeList[cli] );
+                            computeList[cli].i = computeList[cli].i + tempCalc.i;
+                            computeList[cli].d = computeList[cli].d + tempCalc.d;
+                            tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag() - sscD.imag()}, modeList[cli] );
+                            computeList[cli].i = computeList[cli].i + tempCalc.i;
+                            computeList[cli].d = computeList[cli].d + tempCalc.d;
+                        }
+                        divvy+=4;*/
 
-                    break;
+                        
+                        compute( tempCalc, Complex<double>{c.real() - sscD.real(),c.imag() - sscD.imag()} );
+                        out.i = out.i + tempCalc.i;
+                        out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        compute( tempCalc, Complex<double>{c.real() + sscD.real(),c.imag() + sscD.imag()} );
+                        out.i = out.i + tempCalc.i;
+                        out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        compute( tempCalc, Complex<double>{c.real() - sscD.real(),c.imag() + sscD.imag()} );
+                        out.i = out.i + tempCalc.i;
+                        out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        compute( tempCalc, Complex<double>{c.real() + sscD.real(),c.imag() - sscD.imag()} );
+                        out.i = out.i + tempCalc.i;
+                        out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        break;
+                    case 4:
 
-                case 3:
-
-                    out = compute( c );
-
-                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real(),c.imag() + sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real(),c.imag() - sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag() - sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag() + sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag() + sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag() - sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    out.i = out.i / 9;
-                    out.d = out.d / 9.0;
-
-                    break;
-                case 4:
-                    out = compute( c );
-
-                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real(),c.imag() + sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real(),c.imag() - sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag() - sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag() + sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() - sscD.real(),c.imag() + sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() + sscD.real(),c.imag() - sscD.imag()} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() - abs(sscD.real() * cos(45)),c.imag() - abs(sscD.imag() * sin(45))} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() + abs(sscD.real() * cos(45)),c.imag() + abs(sscD.imag() * sin(45))} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() - abs(sscD.real() * cos(45)),c.imag() + abs(sscD.imag() * sin(45))} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    tempCalc = compute( Complex<double>{c.real() + abs(sscD.real() * cos(45)),c.imag() - abs(sscD.imag() * sin(45))} );
-                    out.i = out.i + tempCalc.i;
-                    out.d = out.d + tempCalc.d;
-
-                    out.i = out.i / 13;
-                    out.d = out.d / 13.0;
+                        /*for (int cli = 0; cli < sizeof(modeList) ; ++cli) {
+                            tempCalc = compute( Complex<double>{c.real() - abs(sscD.real() * cos(CONST_PI/4.0)),c.imag() - abs(sscD.imag() * sin(CONST_PI/4.0))}, modeList[cli] );
+                            computeList[cli].i = computeList[cli].i + tempCalc.i;
+                            computeList[cli].d = computeList[cli].d + tempCalc.d;
+                            tempCalc = compute( Complex<double>{c.real() + abs(sscD.real() * cos(CONST_PI/4.0)),c.imag() + abs(sscD.imag() * sin(CONST_PI/4.0))}, modeList[cli] );
+                            computeList[cli].i = computeList[cli].i + tempCalc.i;
+                            computeList[cli].d = computeList[cli].d + tempCalc.d;
+                            tempCalc = compute( Complex<double>{c.real() - abs(sscD.real() * cos(CONST_PI/4.0)),c.imag() + abs(sscD.imag() * sin(CONST_PI/4.0))}, modeList[cli] );
+                            computeList[cli].i = computeList[cli].i + tempCalc.i;
+                            computeList[cli].d = computeList[cli].d + tempCalc.d;
+                            tempCalc = compute( Complex<double>{c.real() + abs(sscD.real() * cos(CONST_PI/4.0)),c.imag() - abs(sscD.imag() * sin(CONST_PI/4.0))}, modeList[cli] );
+                            computeList[cli].i = computeList[cli].i + tempCalc.i;
+                            computeList[cli].d = computeList[cli].d + tempCalc.d;
+                        }
+                        divvy+=4;*/
+                        
+                        compute( tempCalc, Complex<double>{c.real() - abs(sscD.real() * cos(CONST_PI/4.0)),c.imag() - abs(sscD.imag() * sin(CONST_PI/4.0))} );
+                        out.i = out.i + tempCalc.i;
+                        out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        compute( tempCalc, Complex<double>{c.real() + abs(sscD.real() * cos(CONST_PI/4.0)),c.imag() + abs(sscD.imag() * sin(CONST_PI/4.0))} );
+                        out.i = out.i + tempCalc.i;
+                        out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        compute( tempCalc, Complex<double>{c.real() - abs(sscD.real() * cos(CONST_PI/4.0)),c.imag() + abs(sscD.imag() * sin(CONST_PI/4.0))} );
+                        out.i = out.i + tempCalc.i;
+                        out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        compute( tempCalc, Complex<double>{c.real() + abs(sscD.real() * cos(CONST_PI/4.0)),c.imag() - abs(sscD.imag() * sin(CONST_PI/4.0))} );
+                        out.i = out.i + tempCalc.i;
+                        out.d = out.d + tempCalc.d;
+                        ++divvy;
+                        break;
+                }
+                
             }
-			
+            /*if(sizeof(modeList)>1){
+                tempCalc = {1,1};
+                for (i_out_t m: computeList){
+                    m.i = m.i / int(divvy);
+                    m.d = m.d / divvy;
+
+                    if(m.i == -1 || tempCalc.i == -1){
+                        tempCalc.i = -1;
+                    } else {
+                        tempCalc.i *= m.i;
+                    }
+
+                    tempCalc.d *= m.d;
+
+                }
+
+                if ( tempCalc.i != -1) { 
+                    out.i = pow(tempCalc.i, 1.0/(double)(sizeof(modeList)));
+                } else { out.i = -1; }
+
+                out.d = pow(tempCalc.d, 1.0/(double)(sizeof(modeList)));
+            } else {
+                out.i = out.i / int(divvy);
+                out.d = out.d / divvy;
+            }*/
+            out.i = out.i / int(divvy);
+            out.d = out.d / divvy;
 			if( out.i == -1 ){
                 // set to black
 				pixels[index++] = 0;
@@ -570,9 +776,19 @@ void draw_image( pp_t input )
 
                 // adjust for orbit trap
 				if(orbitTrap){
-					v = range1.mapExp( out.i, range2, exponent*out.d);
+					if(specifyBound==1){
+						v = Range<double>{lBound,uBound}.mapExp( out.i, range2, exponent*out.d);
+					} else {
+						v = range1.mapExp( out.i, range2, exponent*out.d);
+					}
 				} else {
-					v = range1.mapExp( out.i, range2, exponent);
+					if(specifyBound==1){
+						v = Range<double>{lBound,uBound}.mapExp( out.i, range2, exponent);
+					} else {
+						v = range1.mapExp( out.i, range2, exponent);
+					}
+					
+					//v = Range<double>{0.0,60}.mapLin( out.i, range2 );
 				}
 
                 // adjust for the fade
@@ -685,7 +901,7 @@ void draw_image( pp_t input )
     std::stringstream outLog;
 
     outLog << "Thread #";
-    outLog << thCount;
+    outLog << input.label;
     outLog << " Finished! IMAGE #";
     outLog << segCount;
     outLog << "\n";
@@ -735,12 +951,21 @@ const static struct{
     {"-split", 34},
     {"-zInit", 35},
     {"-ss", 36},
-    {"-ssDV", 37}
+    {"-ssDV", 37},
+    {"-cascade", 38},
+    {"-cascOffset", 39},
+    {"-cascScale", 40},
+    {"-cascLimit", 41},
+    {"-cascAllOptions", 42},
+	{"-colorBound", 43},
+	{"--classic", 44},
+	{"--absZ", 45}
+    
 };
 
 // Command lookup
 int get_key( const char *key ){
-	for( int i = 0; i < 37; ++i ){
+	for( int i = 0; i < 45; ++i ){
 		if( !strcmp(key, check_key[i].key) )
 			return check_key[i].v;    
 	}
@@ -814,10 +1039,31 @@ int main(int argc, char *argv[])
     supersampling = 0;
     ssDV = 3.0;
     int factor = 1;
+    tetrationAddC = 0;
+    tetrationLim = 2;
+
+    cascadeLimit = -1;
+    cascading = 0;
+    cascadeMethod[0] = 0;
+    cascadeMethod[1] = 1;
+    cascadeOffset = {0.0, 0.0};
+    cascadeScale = {0.01, 0.01};
+
+	useSmoothenedIterations = 1;
+	specifyBound = 0;
+	lBound = 0.0;
+	uBound = limit;
+
+	isBurningShip = 0;
+
 	for(int i = 0; i < argc; ++i){
 		switch( get_key( argv[i] ) ) {
 			case 1:
 				mode = atoi(argv[i+1]);
+                if(mode==-2){
+                    tetrationAddC = atoi(argv[i+2]);
+                    tetrationLim = atoi(argv[i+3]);
+                }
 				break;
 			case 2:
 				position = { strtod(argv[i+1], NULL), strtod(argv[i+2], NULL) };
@@ -967,10 +1213,49 @@ int main(int argc, char *argv[])
             case 37:
                 ssDV = strtod(argv[i+1], NULL);
                 break;
+            case 38:
+                cascading = 1;
+                exclude = 0;
+                set_zInit = 1;
+                cascadeMethod[0] = atoi(argv[i+1]);
+                cascadeMethod[1] = atoi(argv[i+2]);
+                break;
+            case 39:
+                cascadeOffset = {strtod(argv[i+1], NULL), strtod(argv[i+2], NULL)};
+                break;
+            case 40:
+                cascadeScale = {strtod(argv[i+1], NULL), strtod(argv[i+2], NULL)};
+                break;
+            case 41:
+                cascadeLimit = atoi(argv[i+1]);
+                break;
+            case 42:
+                cascading = 1;
+                exclude = 0;
+                set_zInit = 1;
+                cascadeMethod[0] = atoi(argv[i+1]);
+                cascadeMethod[1] = atoi(argv[i+2]);
+                cascadeOffset = {strtod(argv[i+3], NULL), strtod(argv[i+4], NULL)};
+                cascadeScale = {strtod(argv[i+5], NULL), strtod(argv[i+6], NULL)};
+                cascadeLimit = atoi(argv[i+7]);
+                break;
+			case 43:
+				specifyBound = 1;
+				lBound = strtod(argv[i+1], NULL);
+				uBound = strtod(argv[i+2], NULL);
+				break;
+			case 44:
+				useSmoothenedIterations = 0;
+				break;
+			case 45:
+				isBurningShip = 1;
+				break;
+				
 		}
 	}
     // Texture
     std::stringstream tName;
+    tName << "color_maps/";
     tName << tN;
     tName << ".jpg";
 	tImage = stbi_load( (char*) tName.str().c_str(), &tW, &tH, &tC, STBI_rgb);
@@ -1041,9 +1326,9 @@ int main(int argc, char *argv[])
         std::vector<std::thread> threads;
         for ( int it = 0 ; it < s; ++it){
             if( it == s-1 ){
-                inp = { Range<uint16_t>{ it * (frame.h/s), frame.h }, pixArray };
+                inp = pp_t{ Range<uint16_t>{ it * (frame.h/s), frame.h }, pixArray, factor, it+1 };
             } else {
-                inp = { Range<uint16_t>{ it * (frame.h/s), (it+1) * (frame.h/s) }, pixArray };
+                inp = pp_t{ Range<uint16_t>{ it * (frame.h/s), (it+1) * (frame.h/s) }, pixArray, factor, it+1 };
             }
             printf("Starting Thread %d with Range: [%d, %d]\n",it+1, inp.r.A(),inp.r.B());
             threads.push_back(std::thread( &draw_image, inp ));
@@ -1063,18 +1348,11 @@ int main(int argc, char *argv[])
 
             nameIn << "_S";
 
-            // Dumb but it works, might fix later
-            // is barely an impact on performance
-            if(factor*factor > 9 && seg < 9 )
-                nameIn << "0";
-            if(factor*factor > 99 && seg < 99 )
-                nameIn << "0";
-            if(factor*factor > 999 && seg < 999 )
-                nameIn << "0";
-            if(factor*factor > 9999 && seg < 9999 )
-                nameIn << "0"; 
+            char buffer[256]; 
+            sprintf(buffer, "%0*d", (int)(std::to_string(factor*factor).length()) , (seg+1));
+            std::string str(buffer);
 
-            nameIn << (seg+1);
+            nameIn << buffer;
 
         }
         nameIn << ".png";
@@ -1084,7 +1362,7 @@ int main(int argc, char *argv[])
 	    free(pixArray);
     
         //th2.join();
-        if(factor>1){
+        if(factor==1){
 	        printf("\nPixel Array is now free from memory\nIt is now safe to close the program\n\n");
         }
     }

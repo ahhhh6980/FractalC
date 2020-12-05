@@ -1,5 +1,10 @@
+#ifndef __COMPLEX_H_INCLUDED__
+#define __COMPLEX_H_INCLUDED__
+
 #include <iostream>
 #include <cmath>
+
+//#include "Complex.hpp"
 
 template <typename T>
 class Complex 
@@ -61,6 +66,10 @@ class Complex
 	        else{ return ( current * ( temp * temp ) );}
 
         }
+
+		T dot ( Complex<T>& z ) {
+			return ((this->real() * z.real()) + (this->real() * z.imag()));
+		}
 
         Complex<T> power ( Complex<T> z )
         {
@@ -222,8 +231,8 @@ class Complex
         T real (void) { return i; }
         T imag (void) { return j; }
 
-        T real ( T newReal )  { this->i = newReal; }
-        T imag ( T newImag )  { this->j = newImag; }
+        void real ( T newReal )  { this->i = newReal; }
+        void imag ( T newImag )  { this->j = newImag; }
 
 };
 
@@ -307,3 +316,5 @@ Complex<T> absC( Complex<T> z )
     T b = z.imag();
     return Complex<T> { (a >= T{0}) ? a : -a,  (b >= T{0}) ? b : -b };
 }
+
+#endif
